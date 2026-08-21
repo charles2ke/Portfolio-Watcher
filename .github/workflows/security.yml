@@ -1,0 +1,73 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  codeql:
+    name: CodeQL analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+      - uses: github/codeql-action/analyze@v3
+
+  dependency-audit:
+    name: Dependency vulnerability scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+  auto-fix:
+    name: Auto-fix vulnerable dependencies
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    needs: dependency-audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply npm audit fixes
+        run: npm audit fix --audit-level=high || true
+      - name: Verify the app still builds and passes tests
+        run: |
+          npm run lint
+          npm run build
+          npm run coverage
+      - name: Open a pull request with the fixes
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/security-auto-fix
+          title: 'chore(security): apply npm audit fixes'
+          commit-message: 'chore(security): apply npm audit fixes'
+          body: Automated dependency vulnerability fixes produced by `npm audit fix`.
+          delete-branch: true
