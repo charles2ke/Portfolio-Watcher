@@ -9,7 +9,9 @@ export const CHANNEL_LABELS: Record<AlertChannel, string> = {
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
-const PHONE_PATTERN = /^\+?[0-9][0-9\s\-()]{6,17}$/
+const PHONE_PATTERN = /^\+?[0-9][0-9\s\-()]*$/
+const MIN_PHONE_DIGITS = 8
+const MAX_PHONE_DIGITS = 15
 
 export function needsEmail(channels: AlertChannel[]): boolean {
   return channels.includes('email')
@@ -24,7 +26,10 @@ export function isValidEmail(value: string): boolean {
 }
 
 export function isValidPhone(value: string): boolean {
-  return PHONE_PATTERN.test(value.trim())
+  const trimmed = value.trim()
+  if (!PHONE_PATTERN.test(trimmed)) return false
+  const digits = trimmed.replace(/\D/g, '').length
+  return digits >= MIN_PHONE_DIGITS && digits <= MAX_PHONE_DIGITS
 }
 
 /** Every selected channel must have a usable destination. */

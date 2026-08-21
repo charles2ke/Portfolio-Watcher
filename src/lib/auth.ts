@@ -9,6 +9,7 @@ interface ProviderConfig {
 }
 
 const NONCE_KEY = 'pw.auth.nonce'
+const STATE_KEY = 'pw.auth.state'
 const PENDING_KEY = 'pw.auth.pending'
 
 /**
@@ -46,6 +47,7 @@ export function buildAuthorizeUrl(
   config: ProviderConfig,
   redirectUri: string,
   nonce: string,
+  state: string,
 ): string {
   const params = new URLSearchParams({
     client_id: config.clientId,
@@ -54,7 +56,7 @@ export function buildAuthorizeUrl(
     scope: config.scope,
     response_mode: 'fragment',
     nonce,
-    state: nonce,
+    state,
   })
   return `${config.authorizeUrl}?${params.toString()}`
 }
@@ -103,9 +105,11 @@ export function signIn(provider: Provider, redirect: (url: string) => void): Use
   const config = getProviderConfig(provider)
   if (!config) return saveUser(demoUser(provider))
   const nonce = createNonce()
+  const state = createNonce()
   writeJSON(NONCE_KEY, nonce)
+  writeJSON(STATE_KEY, state)
   writeJSON(PENDING_KEY, provider)
-  redirect(buildAuthorizeUrl(config, redirectUri(), nonce))
+  redirect(buildAuthorizeUrl(config, redirectUri(), nonce, state))
   return null
 }
 
@@ -130,13 +134,16 @@ export function completeSignIn(hash: string): User | null {
   const token = fragment.get('id_token')
   if (!token) return null
   const expectedNonce = readJSON<string | null>(NONCE_KEY, null)
+  const expectedState = readJSON<string | null>(STATE_KEY, null)
   const payload = decodeJwtPayload(token)
   const provider = readJSON<Provider>(PENDING_KEY, 'google')
   remove(NONCE_KEY)
+  remove(STATE_KEY)
   remove(PENDING_KEY)
   clearHash()
   if (!payload) return null
   if (expectedNonce === null || payload.nonce !== expectedNonce) return null
+  if (expectedState === null || fragment.get('state') !== expectedState) return null
   const email = typeof payload.email === 'string' ? payload.email : ''
   const name = typeof payload.name === 'string' ? payload.name : email || 'Signed in user'
   const id = typeof payload.sub === 'string' ? payload.sub : `${provider}-user`

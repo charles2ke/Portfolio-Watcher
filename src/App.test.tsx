@@ -52,11 +52,13 @@ describe('App', () => {
     render(<App />)
     await userEvent.click(screen.getByRole('button', { name: /Google/ }))
     const authorizeUrl = vi.mocked(navigate).mock.calls.at(-1)![0]
-    const nonce = new URL(authorizeUrl).searchParams.get('nonce')
+    const params = new URL(authorizeUrl).searchParams
+    const nonce = params.get('nonce')
+    const state = params.get('state')
     cleanup()
 
     const payload = btoa(JSON.stringify({ sub: 'abc', name: 'Grace', nonce })).replace(/=+$/, '')
-    window.location.hash = `#id_token=header.${payload}.sig`
+    window.location.hash = `#id_token=header.${payload}.sig&state=${state}`
     render(<App />)
     expect(screen.getByTestId('current-user')).toHaveTextContent('Grace')
     vi.unstubAllEnvs()

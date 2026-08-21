@@ -52,7 +52,11 @@ describe('channels', () => {
     expect(isValidEmail(' me@example.com ')).toBe(true)
     expect(isValidEmail('nope')).toBe(false)
     expect(isValidPhone(' +15551234567 ')).toBe(true)
+    expect(isValidPhone('+1 (555) 123-4567')).toBe(true)
     expect(isValidPhone('12345')).toBe(false)
+    expect(isValidPhone('+1 (   )   ')).toBe(false)
+    expect(isValidPhone('+1234567890123456')).toBe(false)
+    expect(isValidPhone('phone')).toBe(false)
   })
 
   it('validates the destinations required by the selected channels', () => {

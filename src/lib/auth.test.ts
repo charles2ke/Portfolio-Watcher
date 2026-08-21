@@ -27,14 +27,19 @@ function makeToken(payload: Record<string, unknown>): string {
   return `header.${base64Url(JSON.stringify(payload))}.signature`
 }
 
-/** Starts a redirect flow and returns the nonce the provider must echo back. */
-function startFlow(provider: 'google' | 'microsoft'): string {
+/** Starts a redirect flow and returns the nonce and state to echo back. */
+function startFlow(provider: 'google' | 'microsoft'): { nonce: string; state: string } {
   vi.stubEnv(provider === 'google' ? 'VITE_GOOGLE_CLIENT_ID' : 'VITE_MICROSOFT_CLIENT_ID', 'id')
   let authorizeUrl = ''
   signIn(provider, (url) => {
     authorizeUrl = url
   })
-  return new URL(authorizeUrl).searchParams.get('nonce')!
+  const params = new URL(authorizeUrl).searchParams
+  return { nonce: params.get('nonce')!, state: params.get('state')! }
+}
+
+function callbackHash(token: string, state: string): string {
+  return `#id_token=${token}&state=${encodeURIComponent(state)}`
 }
 
 describe('provider configuration', () => {
@@ -68,11 +73,12 @@ describe('authorize url', () => {
   it('includes the OIDC parameters', () => {
     vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'google-id')
     const config = getProviderConfig('google')!
-    const url = new URL(buildAuthorizeUrl(config, 'https://app.test/', 'nonce-1'))
+    const url = new URL(buildAuthorizeUrl(config, 'https://app.test/', 'nonce-1', 'state-1'))
     expect(url.searchParams.get('client_id')).toBe('google-id')
     expect(url.searchParams.get('response_type')).toBe('id_token')
     expect(url.searchParams.get('redirect_uri')).toBe('https://app.test/')
     expect(url.searchParams.get('nonce')).toBe('nonce-1')
+    expect(url.searchParams.get('state')).toBe('state-1')
   })
 
   it('creates unique nonces', () => {
@@ -137,23 +143,28 @@ describe('completeSignIn', () => {
   })
 
   it('clears the token from the url once consumed', () => {
-    const nonce = startFlow('google')
-    completeSignIn(`#id_token=${makeToken({ sub: 'abc', nonce })}`)
+    const { nonce, state } = startFlow('google')
+    completeSignIn(callbackHash(makeToken({ sub: 'abc', nonce }), state))
     expect(window.location.hash).toBe('')
   })
 
   it('rejects a replayed token once the nonce is consumed', () => {
-    const nonce = startFlow('google')
-    const token = makeToken({ sub: 'abc', nonce })
-    expect(completeSignIn(`#id_token=${token}`)).not.toBeNull()
+    const { nonce, state } = startFlow('google')
+    const hash = callbackHash(makeToken({ sub: 'abc', nonce }), state)
+    expect(completeSignIn(hash)).not.toBeNull()
     signOut()
-    expect(completeSignIn(`#id_token=${token}`)).toBeNull()
+    expect(completeSignIn(hash)).toBeNull()
+  })
+
+  it('rejects a mismatched state', () => {
+    const { nonce } = startFlow('google')
+    expect(completeSignIn(callbackHash(makeToken({ sub: 'abc', nonce }), 'forged'))).toBeNull()
   })
 
   it('creates a session from the id token', () => {
-    const nonce = startFlow('google')
+    const { nonce, state } = startFlow('google')
     const token = makeToken({ sub: 'abc', name: 'Ada', email: 'ada@example.com', nonce })
-    const user = completeSignIn(`#id_token=${token}`)
+    const user = completeSignIn(callbackHash(token, state))
     expect(user).toEqual({
       id: 'abc',
       name: 'Ada',
@@ -165,24 +176,23 @@ describe('completeSignIn', () => {
 
   it('falls back to the email or a generic name', () => {
     const first = startFlow('google')
-    expect(completeSignIn(`#id_token=${makeToken({ email: 'x@y.co', nonce: first })}`)).toMatchObject(
-      { name: 'x@y.co', id: 'google-user' },
-    )
+    expect(
+      completeSignIn(callbackHash(makeToken({ email: 'x@y.co', nonce: first.nonce }), first.state)),
+    ).toMatchObject({ name: 'x@y.co', id: 'google-user' })
     const second = startFlow('google')
-    expect(completeSignIn(`#id_token=${makeToken({ nonce: second })}`)).toMatchObject({
-      name: 'Signed in user',
-      email: '',
-    })
+    expect(
+      completeSignIn(callbackHash(makeToken({ nonce: second.nonce }), second.state)),
+    ).toMatchObject({ name: 'Signed in user', email: '' })
   })
 
   it('rejects a mismatched nonce', () => {
-    startFlow('microsoft')
-    expect(completeSignIn(`#id_token=${makeToken({ sub: 'abc', nonce: 'wrong' })}`)).toBeNull()
+    const { state } = startFlow('microsoft')
+    expect(completeSignIn(callbackHash(makeToken({ sub: 'abc', nonce: 'wrong' }), state))).toBeNull()
   })
 
   it('remembers the pending provider', () => {
-    const nonce = startFlow('microsoft')
-    const user = completeSignIn(`#id_token=${makeToken({ sub: 'abc', nonce })}`)
+    const { nonce, state } = startFlow('microsoft')
+    const user = completeSignIn(callbackHash(makeToken({ sub: 'abc', nonce }), state))
     expect(user).toMatchObject({ provider: 'microsoft', id: 'abc' })
   })
 })
