@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ALERT_CHANNELS, CHANNEL_LABELS, destinationHint, isValidDestination } from '../lib/alerts'
+import { ALERT_CHANNELS, CHANNEL_LABELS, needsEmail, needsPhone } from '../lib/alerts'
 import { toggleChannel, validateDraft } from '../lib/watchlist'
 import type { WatchDraft } from '../lib/watchlist'
 import type { AlertChannel, Watch } from '../lib/types'
@@ -14,7 +14,8 @@ const EMPTY: WatchDraft = {
   dipPercent: 5,
   risePercent: 5,
   channels: ['email'],
-  destination: '',
+  email: '',
+  phone: '',
 }
 
 export function WatchForm({ watches, onAdd }: Props) {
@@ -32,17 +33,18 @@ export function WatchForm({ watches, onAdd }: Props) {
       setError(validationError)
       return
     }
-    if (!isValidDestination(draft.channels, draft.destination)) {
-      setError('Enter a valid destination for the selected alert channels.')
-      return
-    }
     setError(null)
     onAdd(draft)
     setDraft(EMPTY)
   }
 
   return (
-    <form className="card watch-form" onSubmit={handleSubmit} aria-labelledby="watch-form-title">
+    <form
+      className="card watch-form"
+      onSubmit={handleSubmit}
+      noValidate
+      aria-labelledby="watch-form-title"
+    >
       <h2 id="watch-form-title">Add a ticker</h2>
 
       <label className="field">
@@ -97,16 +99,33 @@ export function WatchForm({ watches, onAdd }: Props) {
         </div>
       </fieldset>
 
-      <label className="field">
-        <span>Send alerts to</span>
-        <input
-          name="destination"
-          value={draft.destination}
-          placeholder={destinationHint(draft.channels)}
-          autoComplete="off"
-          onChange={(event) => update('destination', event.target.value)}
-        />
-      </label>
+      {needsEmail(draft.channels) ? (
+        <label className="field">
+          <span>Email address</span>
+          <input
+            name="email"
+            type="email"
+            value={draft.email}
+            placeholder="you@example.com"
+            autoComplete="email"
+            onChange={(event) => update('email', event.target.value)}
+          />
+        </label>
+      ) : null}
+
+      {needsPhone(draft.channels) ? (
+        <label className="field">
+          <span>Phone number</span>
+          <input
+            name="phone"
+            type="tel"
+            value={draft.phone}
+            placeholder="+15551234567"
+            autoComplete="tel"
+            onChange={(event) => update('phone', event.target.value)}
+          />
+        </label>
+      ) : null}
 
       {error ? (
         <p className="form-error" role="alert">

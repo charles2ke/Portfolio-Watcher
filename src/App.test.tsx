@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 import { navigate } from './lib/navigation'
@@ -14,7 +14,8 @@ const watch: Watch = {
   dipPercent: 0.01,
   risePercent: 0.01,
   channels: ['email'],
-  destination: 'ada@example.com',
+  email: 'ada@example.com',
+  phone: '',
 }
 
 beforeEach(() => {
@@ -46,17 +47,25 @@ describe('App', () => {
     await waitFor(() => expect(screen.getAllByRole('status').length).toBeGreaterThan(0))
   })
 
-  it('completes a redirect sign-in from the url fragment', () => {
-    const payload = btoa(JSON.stringify({ sub: 'abc', name: 'Grace' })).replace(/=+$/, '')
+  it('completes a redirect sign-in from the url fragment', async () => {
+    vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'google-id')
+    render(<App />)
+    await userEvent.click(screen.getByRole('button', { name: /Google/ }))
+    const authorizeUrl = vi.mocked(navigate).mock.calls.at(-1)![0]
+    const nonce = new URL(authorizeUrl).searchParams.get('nonce')
+    cleanup()
+
+    const payload = btoa(JSON.stringify({ sub: 'abc', name: 'Grace', nonce })).replace(/=+$/, '')
     window.location.hash = `#id_token=header.${payload}.sig`
     render(<App />)
     expect(screen.getByTestId('current-user')).toHaveTextContent('Grace')
+    vi.unstubAllEnvs()
   })
 
   it('adds and removes a ticker', async () => {
     await signInAsGuest()
     await userEvent.type(screen.getByLabelText('Ticker symbol'), 'MSFT')
-    await userEvent.type(screen.getByLabelText('Send alerts to'), 'ada@example.com')
+    await userEvent.type(screen.getByLabelText('Email address'), 'ada@example.com')
     await userEvent.click(screen.getByRole('button', { name: 'Add to watchlist' }))
 
     const card = await screen.findByTestId('ticker-MSFT')

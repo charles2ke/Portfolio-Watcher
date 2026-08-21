@@ -17,8 +17,10 @@ export interface Watch {
   /** Alert when the price rises by at least this percentage. */
   risePercent: number
   channels: AlertChannel[]
-  /** Destination per channel: email address or phone number. */
-  destination: string
+  /** Address used for email alerts. */
+  email: string
+  /** Phone number used for SMS and WhatsApp alerts. */
+  phone: string
 }
 
 export interface Quote {
@@ -36,7 +38,7 @@ export interface TriggeredAlert {
   changePercent: number
   threshold: number
   channels: AlertChannel[]
-  destination: string
+  destinations: string[]
 }
 
 export type Theme = 'light' | 'dark'

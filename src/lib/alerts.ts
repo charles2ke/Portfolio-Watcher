@@ -11,45 +11,57 @@ export const CHANNEL_LABELS: Record<AlertChannel, string> = {
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const PHONE_PATTERN = /^\+?[0-9][0-9\s\-()]{6,17}$/
 
-export function isValidDestination(channels: AlertChannel[], destination: string): boolean {
-  const value = destination.trim()
-  if (channels.length === 0) return false
-  if (value === '') return false
-  if (channels.includes('email') && !EMAIL_PATTERN.test(value)) return false
-  if ((channels.includes('sms') || channels.includes('whatsapp')) && !PHONE_PATTERN.test(value)) {
-    return false
-  }
-  return true
+export function needsEmail(channels: AlertChannel[]): boolean {
+  return channels.includes('email')
 }
 
-export function destinationHint(channels: AlertChannel[]): string {
-  if (channels.includes('email')) return 'you@example.com'
-  if (channels.length > 0) return '+15551234567'
-  return 'Select at least one alert channel'
+export function needsPhone(channels: AlertChannel[]): boolean {
+  return channels.includes('sms') || channels.includes('whatsapp')
+}
+
+export function isValidEmail(value: string): boolean {
+  return EMAIL_PATTERN.test(value.trim())
+}
+
+export function isValidPhone(value: string): boolean {
+  return PHONE_PATTERN.test(value.trim())
+}
+
+/** Every selected channel must have a usable destination. */
+export function validateDestinations(
+  channels: AlertChannel[],
+  email: string,
+  phone: string,
+): string | null {
+  if (needsEmail(channels) && !isValidEmail(email)) return 'Enter a valid email address.'
+  if (needsPhone(channels) && !isValidPhone(phone)) {
+    return 'Enter a valid phone number in international format, e.g. +15551234567.'
+  }
+  return null
+}
+
+/** The destinations that a watch notifies for its selected channels. */
+export function destinationsFor(watch: Watch): string[] {
+  const destinations: string[] = []
+  if (needsEmail(watch.channels)) destinations.push(watch.email)
+  if (needsPhone(watch.channels)) destinations.push(watch.phone)
+  return destinations
 }
 
 /** Returns the alert that a quote triggers for a watch, if any. */
 export function evaluateWatch(watch: Watch, quote: Quote): TriggeredAlert | null {
   const change = quote.changePercent
+  const base = {
+    symbol: quote.symbol,
+    changePercent: change,
+    channels: watch.channels,
+    destinations: destinationsFor(watch),
+  }
   if (watch.dipPercent > 0 && change <= -watch.dipPercent) {
-    return {
-      symbol: quote.symbol,
-      direction: 'dip',
-      changePercent: change,
-      threshold: watch.dipPercent,
-      channels: watch.channels,
-      destination: watch.destination,
-    }
+    return { ...base, direction: 'dip', threshold: watch.dipPercent }
   }
   if (watch.risePercent > 0 && change >= watch.risePercent) {
-    return {
-      symbol: quote.symbol,
-      direction: 'rise',
-      changePercent: change,
-      threshold: watch.risePercent,
-      channels: watch.channels,
-      destination: watch.destination,
-    }
+    return { ...base, direction: 'rise', threshold: watch.risePercent }
   }
   return null
 }
@@ -71,5 +83,5 @@ export function evaluateWatches(
 export function describeAlert(alert: TriggeredAlert): string {
   const direction = alert.direction === 'dip' ? 'dropped' : 'gained'
   const channels = alert.channels.map((channel) => CHANNEL_LABELS[channel]).join(', ')
-  return `${alert.symbol} ${direction} ${Math.abs(alert.changePercent).toFixed(2)}% (threshold ${alert.threshold}%) — notifying ${alert.destination} via ${channels}`
+  return `${alert.symbol} ${direction} ${Math.abs(alert.changePercent).toFixed(2)}% (threshold ${alert.threshold}%) — notifying ${alert.destinations.join(', ')} via ${channels}`
 }

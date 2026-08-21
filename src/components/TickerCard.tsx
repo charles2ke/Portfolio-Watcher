@@ -59,7 +59,8 @@ export function TickerCard({ watch, quote, onRemove }: Props) {
 
       {alert ? (
         <p className={`ticker__alert is-${alert.direction}`} role="status">
-          {alert.direction === 'dip' ? 'Dip' : 'Rise'} alert sent to {watch.destination}
+          {alert.direction === 'dip' ? 'Dip' : 'Rise'} alert sent to{' '}
+          {alert.destinations.join(', ')}
         </p>
       ) : null}
     </article>

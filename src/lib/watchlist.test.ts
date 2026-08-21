@@ -16,7 +16,8 @@ const draft = (overrides: Partial<WatchDraft> = {}): WatchDraft => ({
   dipPercent: 5,
   risePercent: 5,
   channels: ['email'],
-  destination: ' me@example.com ',
+  email: ' me@example.com ',
+  phone: ' +15551234567 ',
   ...overrides,
 })
 
@@ -29,7 +30,8 @@ describe('createWatch', () => {
       dipPercent: 5,
       risePercent: 5,
       channels: ['email'],
-      destination: 'me@example.com',
+      email: 'me@example.com',
+      phone: '+15551234567',
     })
   })
 })
@@ -59,6 +61,13 @@ describe('validateDraft', () => {
 
   it('requires a channel', () => {
     expect(validateDraft(draft({ channels: [] }), existing)).toMatch(/channel/)
+  })
+
+  it('requires a destination for each selected channel', () => {
+    expect(validateDraft(draft({ email: 'nope' }), existing)).toMatch(/email address/)
+    expect(validateDraft(draft({ channels: ['sms'], phone: '123' }), existing)).toMatch(
+      /phone number/,
+    )
   })
 })
 

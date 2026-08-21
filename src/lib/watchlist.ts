@@ -1,5 +1,6 @@
 import { STORAGE_KEYS, readJSON, writeJSON } from './storage'
 import { isValidSymbol, normalizeSymbol } from './market'
+import { validateDestinations } from './alerts'
 import type { AlertChannel, Watch } from './types'
 
 export interface WatchDraft {
@@ -7,7 +8,8 @@ export interface WatchDraft {
   dipPercent: number
   risePercent: number
   channels: AlertChannel[]
-  destination: string
+  email: string
+  phone: string
 }
 
 export function createWatch(draft: WatchDraft, id: string): Watch {
@@ -17,7 +19,8 @@ export function createWatch(draft: WatchDraft, id: string): Watch {
     dipPercent: draft.dipPercent,
     risePercent: draft.risePercent,
     channels: [...draft.channels],
-    destination: draft.destination.trim(),
+    email: draft.email.trim(),
+    phone: draft.phone.trim(),
   }
 }
 
@@ -31,7 +34,7 @@ export function validateDraft(draft: WatchDraft, existing: Watch[]): string | nu
   }
   if (draft.dipPercent < 0 || draft.risePercent < 0) return 'Percentages cannot be negative.'
   if (draft.channels.length === 0) return 'Choose at least one alert channel.'
-  return null
+  return validateDestinations(draft.channels, draft.email, draft.phone)
 }
 
 export function loadWatches(): Watch[] {

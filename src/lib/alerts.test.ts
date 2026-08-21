@@ -3,10 +3,14 @@ import {
   ALERT_CHANNELS,
   CHANNEL_LABELS,
   describeAlert,
-  destinationHint,
+  destinationsFor,
   evaluateWatch,
   evaluateWatches,
-  isValidDestination,
+  isValidEmail,
+  isValidPhone,
+  needsEmail,
+  needsPhone,
+  validateDestinations,
 } from './alerts'
 import type { Quote, Watch } from './types'
 
@@ -16,7 +20,8 @@ const watch = (overrides: Partial<Watch> = {}): Watch => ({
   dipPercent: 5,
   risePercent: 5,
   channels: ['email'],
-  destination: 'me@example.com',
+  email: 'me@example.com',
+  phone: '+15551234567',
   ...overrides,
 })
 
@@ -35,20 +40,38 @@ describe('channels', () => {
     expect(CHANNEL_LABELS.whatsapp).toBe('WhatsApp')
   })
 
-  it('validates destinations per channel', () => {
-    expect(isValidDestination([], 'me@example.com')).toBe(false)
-    expect(isValidDestination(['email'], '  ')).toBe(false)
-    expect(isValidDestination(['email'], 'nope')).toBe(false)
-    expect(isValidDestination(['email'], 'me@example.com')).toBe(true)
-    expect(isValidDestination(['sms'], '+15551234567')).toBe(true)
-    expect(isValidDestination(['whatsapp'], '12345')).toBe(false)
-    expect(isValidDestination(['sms', 'whatsapp'], '+15551234567')).toBe(true)
+  it('knows which destinations a channel selection needs', () => {
+    expect(needsEmail(['email'])).toBe(true)
+    expect(needsEmail(['sms'])).toBe(false)
+    expect(needsPhone(['sms'])).toBe(true)
+    expect(needsPhone(['whatsapp'])).toBe(true)
+    expect(needsPhone(['email'])).toBe(false)
   })
 
-  it('hints at the expected destination format', () => {
-    expect(destinationHint(['email', 'sms'])).toBe('you@example.com')
-    expect(destinationHint(['sms'])).toBe('+15551234567')
-    expect(destinationHint([])).toBe('Select at least one alert channel')
+  it('validates emails and phone numbers', () => {
+    expect(isValidEmail(' me@example.com ')).toBe(true)
+    expect(isValidEmail('nope')).toBe(false)
+    expect(isValidPhone(' +15551234567 ')).toBe(true)
+    expect(isValidPhone('12345')).toBe(false)
+  })
+
+  it('validates the destinations required by the selected channels', () => {
+    expect(validateDestinations([], '', '')).toBeNull()
+    expect(validateDestinations(['email'], 'nope', '')).toMatch(/email address/)
+    expect(validateDestinations(['sms'], '', '123')).toMatch(/phone number/)
+    expect(validateDestinations(['email'], 'me@example.com', '')).toBeNull()
+    expect(
+      validateDestinations(['email', 'whatsapp'], 'me@example.com', '+15551234567'),
+    ).toBeNull()
+  })
+
+  it('lists the destinations used by a watch', () => {
+    expect(destinationsFor(watch())).toEqual(['me@example.com'])
+    expect(destinationsFor(watch({ channels: ['sms'] }))).toEqual(['+15551234567'])
+    expect(destinationsFor(watch({ channels: ['email', 'whatsapp'] }))).toEqual([
+      'me@example.com',
+      '+15551234567',
+    ])
   })
 })
 
@@ -86,7 +109,7 @@ describe('describeAlert', () => {
   it('describes dips and rises', () => {
     const dip = evaluateWatch(watch({ channels: ['email', 'whatsapp'] }), quote(-8.5))!
     expect(describeAlert(dip)).toBe(
-      'MSFT dropped 8.50% (threshold 5%) — notifying me@example.com via Email, WhatsApp',
+      'MSFT dropped 8.50% (threshold 5%) — notifying me@example.com, +15551234567 via Email, WhatsApp',
     )
     const rise = evaluateWatch(watch(), quote(8.5))!
     expect(describeAlert(rise)).toContain('gained 8.50%')

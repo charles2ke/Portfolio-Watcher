@@ -11,7 +11,8 @@ const existing: Watch[] = [
     dipPercent: 5,
     risePercent: 5,
     channels: ['email'],
-    destination: 'ada@example.com',
+    email: 'ada@example.com',
+    phone: '',
   },
 ]
 
@@ -29,7 +30,7 @@ describe('WatchForm', () => {
     await userEvent.type(screen.getByLabelText('Alert on dip %'), '3')
     await userEvent.clear(screen.getByLabelText('Alert on rise %'))
     await userEvent.type(screen.getByLabelText('Alert on rise %'), '4')
-    await userEvent.type(screen.getByLabelText('Send alerts to'), 'ada@example.com')
+    await userEvent.type(screen.getByLabelText('Email address'), 'ada@example.com')
     await userEvent.click(screen.getByRole('button', { name: 'Add to watchlist' }))
 
     expect(onAdd).toHaveBeenCalledWith({
@@ -37,29 +38,43 @@ describe('WatchForm', () => {
       dipPercent: 3,
       risePercent: 4,
       channels: ['email'],
-      destination: 'ada@example.com',
+      email: 'ada@example.com',
+      phone: '',
     })
     expect(screen.getByLabelText('Ticker symbol')).toHaveValue('')
   })
 
-  it('toggles alert channels and updates the destination hint', async () => {
+  it('shows the destination field matching the selected channels', async () => {
     const { onAdd } = setup()
     await userEvent.click(screen.getByLabelText('Email'))
-    expect(screen.getByLabelText('Send alerts to')).toHaveAttribute(
-      'placeholder',
-      'Select at least one alert channel',
-    )
+    expect(screen.queryByLabelText('Email address')).toBeNull()
+    expect(screen.queryByLabelText('Phone number')).toBeNull()
+
     await userEvent.click(screen.getByLabelText('WhatsApp'))
     await userEvent.click(screen.getByLabelText('SMS'))
-    expect(screen.getByLabelText('Send alerts to')).toHaveAttribute(
-      'placeholder',
-      '+15551234567',
-    )
+    expect(screen.getByLabelText('Phone number')).toBeInTheDocument()
+
     await userEvent.type(screen.getByLabelText('Ticker symbol'), 'TSLA')
-    await userEvent.type(screen.getByLabelText('Send alerts to'), '+15551234567')
+    await userEvent.type(screen.getByLabelText('Phone number'), '+15551234567')
     await userEvent.click(screen.getByRole('button', { name: 'Add to watchlist' }))
     expect(onAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ channels: ['whatsapp', 'sms'], destination: '+15551234567' }),
+      expect.objectContaining({ channels: ['whatsapp', 'sms'], phone: '+15551234567' }),
+    )
+  })
+
+  it('supports email and phone channels together', async () => {
+    const { onAdd } = setup()
+    await userEvent.click(screen.getByLabelText('WhatsApp'))
+    await userEvent.type(screen.getByLabelText('Ticker symbol'), 'NVDA')
+    await userEvent.type(screen.getByLabelText('Email address'), 'ada@example.com')
+    await userEvent.type(screen.getByLabelText('Phone number'), '+15551234567')
+    await userEvent.click(screen.getByRole('button', { name: 'Add to watchlist' }))
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channels: ['email', 'whatsapp'],
+        email: 'ada@example.com',
+        phone: '+15551234567',
+      }),
     )
   })
 
@@ -74,9 +89,9 @@ describe('WatchForm', () => {
   it('rejects an invalid destination', async () => {
     const { onAdd } = setup()
     await userEvent.type(screen.getByLabelText('Ticker symbol'), 'MSFT')
-    await userEvent.type(screen.getByLabelText('Send alerts to'), 'not-an-email')
+    await userEvent.type(screen.getByLabelText('Email address'), 'not-an-email')
     await userEvent.click(screen.getByRole('button', { name: 'Add to watchlist' }))
-    expect(screen.getByRole('alert')).toHaveTextContent('valid destination')
+    expect(screen.getByRole('alert')).toHaveTextContent('valid email address')
     expect(onAdd).not.toHaveBeenCalled()
   })
 })

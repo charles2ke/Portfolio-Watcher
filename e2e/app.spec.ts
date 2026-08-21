@@ -30,7 +30,7 @@ test.describe('Portfolio Watcher', () => {
     await page.getByLabel('Ticker symbol').fill('MSFT')
     await page.getByLabel('Alert on dip %').fill('1')
     await page.getByLabel('Alert on rise %').fill('1')
-    await page.getByLabel('Send alerts to').fill('trader@example.com')
+    await page.getByLabel('Email address').fill('trader@example.com')
     await page.getByRole('button', { name: 'Add to watchlist' }).click()
 
     const card = page.getByTestId('ticker-MSFT')
@@ -52,11 +52,11 @@ test.describe('Portfolio Watcher', () => {
 
   test('supports SMS and WhatsApp channels', async ({ page }) => {
     await signInAsGuest(page)
-    await page.getByLabel('Email').uncheck()
-    await page.getByLabel('SMS').check()
-    await page.getByLabel('WhatsApp').check()
+    await page.getByRole('checkbox', { name: 'Email' }).uncheck()
+    await page.getByRole('checkbox', { name: 'SMS' }).check()
+    await page.getByRole('checkbox', { name: 'WhatsApp' }).check()
     await page.getByLabel('Ticker symbol').fill('TSLA')
-    await page.getByLabel('Send alerts to').fill('+15551234567')
+    await page.getByLabel('Phone number').fill('+15551234567')
     await page.getByRole('button', { name: 'Add to watchlist' }).click()
     const card = page.getByTestId('ticker-TSLA')
     await expect(card.getByText('SMS')).toBeVisible()
@@ -75,7 +75,7 @@ test.describe('Portfolio Watcher', () => {
   test('persists the watchlist across reloads and logs out', async ({ page }) => {
     await signInAsGuest(page)
     await page.getByLabel('Ticker symbol').fill('AAPL')
-    await page.getByLabel('Send alerts to').fill('trader@example.com')
+    await page.getByLabel('Email address').fill('trader@example.com')
     await page.getByRole('button', { name: 'Add to watchlist' }).click()
     await expect(page.getByTestId('ticker-AAPL')).toBeVisible()
 
@@ -90,7 +90,7 @@ test.describe('Portfolio Watcher', () => {
     await page.setViewportSize({ width: 360, height: 780 })
     await signInAsGuest(page)
     await page.getByLabel('Ticker symbol').fill('NVDA')
-    await page.getByLabel('Send alerts to').fill('trader@example.com')
+    await page.getByLabel('Email address').fill('trader@example.com')
     await page.getByRole('button', { name: 'Add to watchlist' }).click()
     await expect(page.getByTestId('ticker-NVDA')).toBeVisible()
     const overflow = await page.evaluate(

@@ -114,18 +114,29 @@ export function redirectUri(): string {
   return `${origin}${pathname}`
 }
 
-/** Completes a redirect sign-in by reading the URL fragment. */
+/** Removes the id_token from the address bar once it has been consumed. */
+function clearHash(): void {
+  const { history, location } = globalThis
+  history.replaceState(null, '', `${location.pathname}${location.search}`)
+}
+
+/**
+ * Completes a redirect sign-in by reading the URL fragment. The token is only
+ * accepted when it matches the nonce created when the flow started, and the
+ * fragment is always cleared so the token never lingers in the browser history.
+ */
 export function completeSignIn(hash: string): User | null {
   const fragment = new URLSearchParams(hash.replace(/^#/, ''))
   const token = fragment.get('id_token')
   if (!token) return null
   const expectedNonce = readJSON<string | null>(NONCE_KEY, null)
   const payload = decodeJwtPayload(token)
-  remove(NONCE_KEY)
-  if (!payload) return null
-  if (expectedNonce !== null && payload.nonce !== expectedNonce) return null
   const provider = readJSON<Provider>(PENDING_KEY, 'google')
+  remove(NONCE_KEY)
   remove(PENDING_KEY)
+  clearHash()
+  if (!payload) return null
+  if (expectedNonce === null || payload.nonce !== expectedNonce) return null
   const email = typeof payload.email === 'string' ? payload.email : ''
   const name = typeof payload.name === 'string' ? payload.name : email || 'Signed in user'
   const id = typeof payload.sub === 'string' ? payload.sub : `${provider}-user`

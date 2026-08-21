@@ -17,7 +17,8 @@ const watch: Watch = {
   dipPercent: 5,
   risePercent: 5,
   channels: ['email', 'whatsapp'],
-  destination: 'ada@example.com',
+  email: 'ada@example.com',
+  phone: '+15551234567',
 }
 
 const quote = (changePercent: number): Quote => ({
@@ -95,7 +96,7 @@ describe('AlertsPanel', () => {
             changePercent: -7,
             threshold: 5,
             channels: ['sms'],
-            destination: '+15551234567',
+            destinations: ['+15551234567'],
           },
         ]}
       />,
@@ -114,7 +115,9 @@ describe('TickerCard', () => {
     render(<TickerCard watch={watch} quote={quote(8)} onRemove={vi.fn()} />)
     expect(screen.getByText(/123\.46/)).toBeInTheDocument()
     expect(screen.getByText(/8\.00%/)).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('Rise alert sent to ada@example.com')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Rise alert sent to ada@example.com, +15551234567',
+    )
     expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       'Email',
       'WhatsApp',
