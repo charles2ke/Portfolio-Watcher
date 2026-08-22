@@ -68,6 +68,10 @@ npm run test:e2e   # Playwright end-to-end tests (desktop + mobile projects)
 | `readme.yml` | Regenerates the auto-managed README sections whenever the project metadata changes. |
 | `pages.yml` | Builds and publishes the site to GitHub Pages on every push to `main`. |
 
+Publishing requires a one-time repository setup: open **Settings → Pages** and set
+**Source** to **GitHub Actions**. Until that is done the `pages.yml` run fails with
+`Get Pages site failed ... Not Found`; the workflow token cannot enable Pages by itself.
+
 ## Scripts
 
 <!-- scripts:start -->
