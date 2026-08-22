@@ -34,9 +34,9 @@ jobs:
         run: npm run build
       - name: Add a SPA fallback
         run: cp dist/index.html dist/404.html
+      # Pages must already be enabled with "GitHub Actions" as its source: the
+      # workflow token cannot create the Pages site itself.
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

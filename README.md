@@ -41,6 +41,12 @@ local demo session and quotes come from a deterministic offline price series.
 Add them to a `.env.local` file for local development, or as repository variables consumed by the
 Pages workflow for production.
 
+### Deployment
+
+Every push to `main` runs the `Deploy to GitHub Pages` workflow. Before the first deployment,
+enable Pages once in **Settings → Pages** and set **Source** to **GitHub Actions** — the workflow
+token is not allowed to create the Pages site itself.
+
 ## Testing
 
 ```bash
