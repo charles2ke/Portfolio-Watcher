@@ -7,6 +7,7 @@ import type { AlertChannel, Watch } from '../lib/types'
 interface Props {
   watches: Watch[]
   onAdd: (draft: WatchDraft) => void
+  initialSymbol?: string
 }
 
 const EMPTY: WatchDraft = {
@@ -18,8 +19,8 @@ const EMPTY: WatchDraft = {
   phone: '',
 }
 
-export function WatchForm({ watches, onAdd }: Props) {
-  const [draft, setDraft] = useState<WatchDraft>(EMPTY)
+export function WatchForm({ watches, onAdd, initialSymbol = '' }: Props) {
+  const [draft, setDraft] = useState<WatchDraft>({ ...EMPTY, symbol: initialSymbol })
   const [error, setError] = useState<string | null>(null)
 
   const update = <K extends keyof WatchDraft>(key: K, value: WatchDraft[K]) => {

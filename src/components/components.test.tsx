@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LoginScreen } from './LoginScreen'
+import { SetupPage } from './SetupPage'
 import { Header } from './Header'
 import { ThemeToggle } from './ThemeToggle'
 import { Sparkline } from './Sparkline'
@@ -139,5 +140,25 @@ describe('TickerCard', () => {
     render(<TickerCard watch={watch} quote={quote(1)} onRemove={onRemove} />)
     await userEvent.click(screen.getByRole('button', { name: /Remove MSFT/ }))
     expect(onRemove).toHaveBeenCalledWith('w1')
+  })
+})
+
+describe('SetupPage', () => {
+  it('rejects an invalid symbol and completes with a normalized one', async () => {
+    const onComplete = vi.fn()
+    render(<SetupPage onComplete={onComplete} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('valid ticker symbol')
+
+    await userEvent.type(screen.getByLabelText('First ticker symbol'), 'msft')
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(onComplete).toHaveBeenCalledWith('MSFT')
+  })
+
+  it('can be skipped', async () => {
+    const onComplete = vi.fn()
+    render(<SetupPage onComplete={onComplete} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Skip for now' }))
+    expect(onComplete).toHaveBeenCalledWith('')
   })
 })

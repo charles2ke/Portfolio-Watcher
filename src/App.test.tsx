@@ -29,6 +29,7 @@ afterEach(() => {
 async function signInAsGuest() {
   render(<App />)
   await userEvent.click(screen.getByRole('button', { name: /guest/i }))
+  await userEvent.click(screen.getByRole('button', { name: 'Skip for now' }))
 }
 
 describe('App', () => {
@@ -60,6 +61,7 @@ describe('App', () => {
     const payload = btoa(JSON.stringify({ sub: 'abc', name: 'Grace', nonce })).replace(/=+$/, '')
     window.location.hash = `#id_token=header.${payload}.sig&state=${state}`
     render(<App />)
+    await userEvent.click(screen.getByRole('button', { name: 'Skip for now' }))
     expect(screen.getByTestId('current-user')).toHaveTextContent('Grace')
     vi.unstubAllEnvs()
   })
@@ -94,6 +96,14 @@ describe('App', () => {
     expect(document.documentElement.dataset.theme).toBe('light')
     await userEvent.click(screen.getByTestId('theme-toggle'))
     expect(document.documentElement.dataset.theme).toBe('dark')
+  })
+
+  it('pre-fills the ticker chosen during setup', async () => {
+    render(<App />)
+    await userEvent.click(screen.getByRole('button', { name: /guest/i }))
+    await userEvent.type(screen.getByLabelText('First ticker symbol'), 'msft')
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(screen.getByLabelText('Ticker symbol')).toHaveValue('MSFT')
   })
 
   it('logs out back to the login screen', async () => {
