@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LoginScreen } from './LoginScreen'
+import { SetupPage } from './SetupPage'
 import { Header } from './Header'
 import { ThemeToggle } from './ThemeToggle'
 import { Sparkline } from './Sparkline'
@@ -38,6 +39,16 @@ describe('LoginScreen', () => {
     await userEvent.click(screen.getByRole('button', { name: /Google/ }))
     await userEvent.click(screen.getByRole('button', { name: /guest/ }))
     expect(onSignIn.mock.calls.flat()).toEqual(['microsoft', 'google', 'guest'])
+  })
+})
+
+describe('SetupPage', () => {
+  it('explains the setup steps and continues to the dashboard', async () => {
+    const onComplete = vi.fn()
+    render(<SetupPage onComplete={onComplete} />)
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+    await userEvent.click(screen.getByRole('button', { name: /Get started/ }))
+    expect(onComplete).toHaveBeenCalledTimes(1)
   })
 })
 
