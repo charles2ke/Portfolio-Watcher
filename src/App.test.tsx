@@ -26,14 +26,22 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+async function completeSetup() {
+  await userEvent.click(screen.getByRole('button', { name: 'Continue to dashboard' }))
+}
+
 async function signInAsGuest() {
   render(<App />)
   await userEvent.click(screen.getByRole('button', { name: /guest/i }))
+  await completeSetup()
 }
 
 describe('App', () => {
   it('shows the login screen first and signs in as guest', async () => {
-    await signInAsGuest()
+    render(<App />)
+    await userEvent.click(screen.getByRole('button', { name: /guest/i }))
+    expect(screen.getByTestId('setup-page')).toBeInTheDocument()
+    await completeSetup()
     expect(screen.getByTestId('current-user')).toHaveTextContent('Guest')
     expect(screen.getByTestId('watchlist-empty')).toBeInTheDocument()
   })
@@ -60,6 +68,7 @@ describe('App', () => {
     const payload = btoa(JSON.stringify({ sub: 'abc', name: 'Grace', nonce })).replace(/=+$/, '')
     window.location.hash = `#id_token=header.${payload}.sig&state=${state}`
     render(<App />)
+    await completeSetup()
     expect(screen.getByTestId('current-user')).toHaveTextContent('Grace')
     vi.unstubAllEnvs()
   })
