@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AlertsPanel } from './components/AlertsPanel'
 import { Header } from './components/Header'
 import { LoginScreen } from './components/LoginScreen'
+import { SetupPage } from './components/SetupPage'
 import { TickerCard } from './components/TickerCard'
 import { WatchForm } from './components/WatchForm'
 import { completeSignIn, loadUser, signIn, signOut } from './lib/auth'
@@ -24,6 +25,7 @@ export default function App() {
   const [quotes, setQuotes] = useState<Record<string, Quote>>({})
   const [theme, setTheme] = useState<Theme>(() => initialTheme())
   const [tick, setTick] = useState(0)
+  const [setupComplete, setSetupComplete] = useState(watches.length > 0)
 
   useEffect(() => {
     applyTheme(theme)
@@ -64,6 +66,11 @@ export default function App() {
     setUser(null)
   }, [])
 
+  const handleSetupComplete = useCallback((symbol: string) => {
+    setSetupComplete(true)
+    // Symbol will be added through the WatchForm on the main dashboard
+  }, [])
+
   const handleAdd = useCallback((draft: WatchDraft) => {
     setWatches((current) => [...current, createWatch(draft, newId())])
   }, [])
@@ -75,6 +82,8 @@ export default function App() {
   const alerts = useMemo(() => evaluateWatches(watches, quotes), [watches, quotes])
 
   if (!user) return <LoginScreen onSignIn={handleSignIn} />
+
+  if (!setupComplete) return <SetupPage onComplete={handleSetupComplete} />
 
   return (
     <div className="app">
