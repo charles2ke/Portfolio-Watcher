@@ -65,6 +65,7 @@ export default function App() {
   const handleSignOut = useCallback(() => {
     signOut()
     setUser(null)
+    setSetupSymbol('')
   }, [])
 
   const handleSetupComplete = useCallback((symbol: string) => {
