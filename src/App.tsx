@@ -66,9 +66,8 @@ export default function App() {
     setUser(null)
   }, [])
 
-  const handleSetupComplete = useCallback((symbol: string) => {
+  const handleSetupComplete = useCallback(() => {
     setSetupComplete(true)
-    // Symbol will be added through the WatchForm on the main dashboard
   }, [])
 
   const handleAdd = useCallback((draft: WatchDraft) => {

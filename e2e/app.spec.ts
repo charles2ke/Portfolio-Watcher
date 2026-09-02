@@ -4,6 +4,7 @@ import type { Page } from '@playwright/test'
 async function signInAsGuest(page: Page) {
   await page.goto('/')
   await page.getByRole('button', { name: /guest/i }).click()
+  await page.getByRole('button', { name: /Get started/ }).click()
   await expect(page.getByTestId('current-user')).toContainText('Guest')
 }
 
@@ -20,6 +21,7 @@ test.describe('Portfolio Watcher', () => {
   test('signs in with Microsoft in demo mode', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: /Microsoft/ }).click()
+    await page.getByRole('button', { name: /Get started/ }).click()
     await expect(page.getByTestId('current-user')).toContainText('Microsoft Demo User')
   })
 
