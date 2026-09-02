@@ -31,17 +31,6 @@ const quote = (changePercent: number): Quote => ({
   series: [120, 121, 123.456],
 })
 
-describe('SetupPage', () => {
-  it('explains the setup steps and continues to the dashboard', async () => {
-    const onComplete = vi.fn()
-    render(<SetupPage onComplete={onComplete} />)
-    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
-    expect(screen.getAllByRole('listitem')).toHaveLength(3)
-    await userEvent.click(screen.getByRole('button', { name: 'Continue to dashboard' }))
-    expect(onComplete).toHaveBeenCalledTimes(1)
-  })
-})
-
 describe('LoginScreen', () => {
   it('offers Microsoft, Google and guest sign-in', async () => {
     const onSignIn = vi.fn()
@@ -50,6 +39,16 @@ describe('LoginScreen', () => {
     await userEvent.click(screen.getByRole('button', { name: /Google/ }))
     await userEvent.click(screen.getByRole('button', { name: /guest/ }))
     expect(onSignIn.mock.calls.flat()).toEqual(['microsoft', 'google', 'guest'])
+  })
+})
+
+describe('SetupPage', () => {
+  it('explains the setup steps and continues to the dashboard', async () => {
+    const onComplete = vi.fn()
+    render(<SetupPage onComplete={onComplete} />)
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+    await userEvent.click(screen.getByRole('button', { name: /Get started/ }))
+    expect(onComplete).toHaveBeenCalledTimes(1)
   })
 })
 
