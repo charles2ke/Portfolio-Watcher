@@ -15,7 +15,7 @@ export function SetupPage({ onComplete }: Props) {
         <p className="login__eyebrow">Getting started</p>
         <h1 id="setup-title">Let&apos;s set up your watchlist.</h1>
         <p className="login__lede">Three quick things before your dashboard is ready.</p>
-        <ol className="login__lede">
+        <ol className="login__steps">
           {STEPS.map((step) => (
             <li key={step}>{step}</li>
           ))}

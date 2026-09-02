@@ -179,6 +179,16 @@ h3 {
   margin: 0 0 1.5rem;
 }
 
+.login__steps {
+  color: var(--text-muted);
+  margin: 0 0 1.5rem;
+  padding-left: 1.25rem;
+}
+
+.login__steps li + li {
+  margin-top: 0.5rem;
+}
+
 .login__actions {
   display: grid;
   gap: 0.7rem;
