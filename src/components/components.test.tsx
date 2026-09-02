@@ -42,6 +42,16 @@ describe('LoginScreen', () => {
   })
 })
 
+describe('SetupPage', () => {
+  it('explains the setup steps and continues to the dashboard', async () => {
+    const onComplete = vi.fn()
+    render(<SetupPage onComplete={onComplete} />)
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
+    await userEvent.click(screen.getByRole('button', { name: /Get started/ }))
+    expect(onComplete).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('ThemeToggle', () => {
   it('reflects the active theme', async () => {
     const onToggle = vi.fn()
@@ -140,25 +150,5 @@ describe('TickerCard', () => {
     render(<TickerCard watch={watch} quote={quote(1)} onRemove={onRemove} />)
     await userEvent.click(screen.getByRole('button', { name: /Remove MSFT/ }))
     expect(onRemove).toHaveBeenCalledWith('w1')
-  })
-})
-
-describe('SetupPage', () => {
-  it('rejects an invalid symbol and completes with a normalized one', async () => {
-    const onComplete = vi.fn()
-    render(<SetupPage onComplete={onComplete} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Continue' }))
-    expect(screen.getByRole('alert')).toHaveTextContent('valid ticker symbol')
-
-    await userEvent.type(screen.getByLabelText('First ticker symbol'), 'msft')
-    await userEvent.click(screen.getByRole('button', { name: 'Continue' }))
-    expect(onComplete).toHaveBeenCalledWith('MSFT')
-  })
-
-  it('can be skipped', async () => {
-    const onComplete = vi.fn()
-    render(<SetupPage onComplete={onComplete} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Skip for now' }))
-    expect(onComplete).toHaveBeenCalledWith('')
   })
 })

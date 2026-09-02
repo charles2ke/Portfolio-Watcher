@@ -26,7 +26,6 @@ export default function App() {
   const [theme, setTheme] = useState<Theme>(() => initialTheme())
   const [tick, setTick] = useState(0)
   const [setupComplete, setSetupComplete] = useState(watches.length > 0)
-  const [setupSymbol, setSetupSymbol] = useState('')
 
   useEffect(() => {
     applyTheme(theme)
@@ -65,12 +64,9 @@ export default function App() {
   const handleSignOut = useCallback(() => {
     signOut()
     setUser(null)
-    setSetupSymbol('')
   }, [])
 
-  const handleSetupComplete = useCallback((symbol: string) => {
-    // The symbol is pre-filled in the watch form so the user can finish the setup there.
-    setSetupSymbol(symbol)
+  const handleSetupComplete = useCallback(() => {
     setSetupComplete(true)
   }, [])
 
@@ -98,7 +94,7 @@ export default function App() {
       />
       <main className="layout">
         <div className="layout__side">
-          <WatchForm watches={watches} onAdd={handleAdd} initialSymbol={setupSymbol} />
+          <WatchForm watches={watches} onAdd={handleAdd} />
           <AlertsPanel alerts={alerts} />
         </div>
         <section className="layout__main" aria-labelledby="watchlist-title">
