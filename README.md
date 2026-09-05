@@ -69,8 +69,14 @@ npm run test:e2e   # Playwright end-to-end tests (desktop + mobile projects)
 | `pages.yml` | Builds and publishes the site to GitHub Pages on every push to `main`. |
 
 Publishing requires a one-time repository setup: open **Settings → Pages** and set
-**Source** to **GitHub Actions**. Until that is done the `pages.yml` run fails with
-`Get Pages site failed ... Not Found`; the workflow token cannot enable Pages by itself.
+**Source** to **GitHub Actions**. The workflow token cannot enable Pages by itself.
+
+While **Source** is still **Deploy from a branch**, GitHub also runs its built-in
+`pages build and deployment` job on every push. That job builds the repository root with Jekyll
+and, because it usually finishes after `pages.yml`, it replaces the Vite bundle with the unbuilt
+source `index.html` — the live site then loads `/src/main.tsx`, which the browser cannot execute,
+and renders a blank page. Switching **Source** to **GitHub Actions** stops that job from running.
+`public/.nojekyll` is published alongside the bundle so the output is never Jekyll-processed.
 
 ## Scripts
 
