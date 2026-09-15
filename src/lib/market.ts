@@ -1,4 +1,8 @@
 import type { Quote } from './types'
+import { percentChange, roundTo } from './numbers'
+import { resolveQuoteSource } from './quoteProviders'
+
+export { percentChange, roundTo }
 
 const POINTS = 40
 
@@ -31,16 +35,6 @@ export function isValidSymbol(symbol: string): boolean {
   return /^[A-Z][A-Z0-9.-]{0,9}$/.test(normalizeSymbol(symbol))
 }
 
-export function percentChange(from: number, to: number): number {
-  if (from === 0) return 0
-  return ((to - from) / from) * 100
-}
-
-export function roundTo(value: number, decimals = 2): number {
-  const factor = 10 ** decimals
-  return Math.round(value * factor) / factor
-}
-
 /** Builds a reproducible price series for a symbol (used as offline data). */
 export function syntheticQuote(symbol: string, seedOffset = 0): Quote {
   const normalized = normalizeSymbol(symbol)
@@ -64,39 +58,21 @@ export function syntheticQuote(symbol: string, seedOffset = 0): Quote {
   }
 }
 
-interface QuoteApiResponse {
-  price?: number
-  previousClose?: number
-  currency?: string
-  series?: number[]
-}
-
 /**
- * Fetches a quote from an optional quote API. Falls back to the deterministic
- * synthetic series whenever no API is configured or the request fails, so the
- * static site always renders data.
+ * Fetches a quote from the configured market data integration (Finnhub, Alpha
+ * Vantage or a self-hosted quote API). Falls back to the deterministic
+ * synthetic series whenever no integration is configured or the request fails,
+ * so the static site always renders data.
  */
 export async function fetchQuote(symbol: string, seedOffset = 0): Promise<Quote> {
-  const env = import.meta.env as Record<string, string | undefined>
-  const apiUrl = env.VITE_QUOTE_API_URL
   const normalized = normalizeSymbol(symbol)
-  if (!apiUrl) return syntheticQuote(normalized, seedOffset)
+  const source = resolveQuoteSource(import.meta.env as Record<string, string | undefined>)
+  if (!source) return syntheticQuote(normalized, seedOffset)
   try {
-    const response = await fetch(`${apiUrl}${encodeURIComponent(normalized)}`)
+    const response = await fetch(source.url(normalized))
     if (!response.ok) return syntheticQuote(normalized, seedOffset)
-    const data = (await response.json()) as QuoteApiResponse
-    const series = Array.isArray(data.series) && data.series.length > 0 ? data.series : null
-    if (typeof data.price !== 'number' || !series) return syntheticQuote(normalized, seedOffset)
-    const previousClose =
-      typeof data.previousClose === 'number' ? data.previousClose : series[0]
-    return {
-      symbol: normalized,
-      price: data.price,
-      previousClose,
-      changePercent: roundTo(percentChange(previousClose, data.price)),
-      currency: data.currency ?? 'USD',
-      series,
-    }
+    const quote = source.parse(await response.json(), normalized)
+    return quote ?? syntheticQuote(normalized, seedOffset)
   } catch {
     return syntheticQuote(normalized, seedOffset)
   }

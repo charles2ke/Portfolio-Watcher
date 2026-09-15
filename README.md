@@ -36,10 +36,50 @@ local demo session and quotes come from a deterministic offline price series.
 | `VITE_GOOGLE_CLIENT_ID` | Enables the real Google OpenID Connect sign-in flow. |
 | `VITE_MICROSOFT_CLIENT_ID` | Enables the real Microsoft Entra ID sign-in flow. |
 | `VITE_MICROSOFT_TENANT_ID` | Microsoft tenant to authenticate against (defaults to `common`). |
-| `VITE_QUOTE_API_URL` | Quote API prefix; the ticker symbol is appended to the URL. |
+| `VITE_QUOTE_API_URL` | Self-hosted quote API prefix; the ticker symbol is appended to the URL. Takes precedence over `VITE_MARKET_PROVIDER`. |
+| `VITE_MARKET_PROVIDER` | Market data vendor: `finnhub` or `alphavantage`. |
+| `VITE_MARKET_API_KEY` | API key for the selected market data vendor. |
+| `VITE_ALERT_WEBHOOK_URL` | Relay endpoint that delivers triggered alerts over email, SMS and WhatsApp. |
+| `VITE_ALERT_WEBHOOK_TOKEN` | Optional bearer token sent with each alert webhook request. |
 
 Add them to a `.env.local` file for local development, or as repository variables consumed by the
 Pages workflow for production.
+
+## Integrations
+
+| Integration | Configuration | Behaviour |
+| --- | --- | --- |
+| Microsoft Entra ID / Google | `VITE_MICROSOFT_CLIENT_ID`, `VITE_MICROSOFT_TENANT_ID`, `VITE_GOOGLE_CLIENT_ID` | Real OpenID Connect redirect sign-in; falls back to a local demo session. |
+| Finnhub | `VITE_MARKET_PROVIDER=finnhub`, `VITE_MARKET_API_KEY` | Live price and previous close from `/quote`; the sparkline uses the day's open, low, high and current price. |
+| Alpha Vantage | `VITE_MARKET_PROVIDER=alphavantage`, `VITE_MARKET_API_KEY` | 5-minute intraday closes power the price and the sparkline. |
+| Self-hosted quote API | `VITE_QUOTE_API_URL` | The app's own contract: `{ price, previousClose?, currency?, series[] }`. |
+| Alert relay (email / SMS / WhatsApp) | `VITE_ALERT_WEBHOOK_URL`, `VITE_ALERT_WEBHOOK_TOKEN` | Every newly triggered threshold is POSTed once; the alerts panel shows `Sent`, `Failed` or `In-app only`. |
+
+Any failing or missing integration degrades gracefully: quotes fall back to the deterministic
+offline series and alerts remain visible in the app.
+
+### Alert relay contract
+
+The browser POSTs a JSON body to `VITE_ALERT_WEBHOOK_URL`:
+
+```json
+{
+  "symbol": "MSFT",
+  "direction": "dip",
+  "changePercent": -6.1,
+  "threshold": 5,
+  "channels": ["email", "whatsapp"],
+  "destinations": ["trader@example.com", "+15551234567"],
+  "message": "MSFT dropped 6.10% (threshold 5%) — notifying …",
+  "sentAt": "2024-01-02T15:04:05.000Z"
+}
+```
+
+Point it at a small serverless function that forwards the payload to your providers (for example
+SendGrid for email and Twilio for SMS and WhatsApp). Because this is a static site, provider
+credentials must live in that relay — never in the frontend bundle. Anything in a `VITE_` variable
+is public, so scope market data keys to read-only quote access and protect the relay with
+`VITE_ALERT_WEBHOOK_TOKEN` plus an origin allow-list.
 
 ## Testing
 

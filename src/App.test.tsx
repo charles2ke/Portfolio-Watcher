@@ -130,4 +130,21 @@ describe('App', () => {
     })
     expect(screen.getByTestId('ticker-MSFT').textContent).not.toBe(before)
   })
+
+  it('delivers a triggered alert to the configured webhook once', async () => {
+    vi.stubEnv('VITE_ALERT_WEBHOOK_URL', 'https://relay.example/alerts')
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+    writeJSON(STORAGE_KEYS.user, { id: '1', name: 'Ada', email: '', provider: 'guest' })
+    writeJSON(STORAGE_KEYS.watches, [watch])
+    render(<App />)
+    await waitFor(() => expect(screen.getByTestId('alert-status-MSFT')).toHaveTextContent('Sent'))
+    const calls = fetchMock.mock.calls.length
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(fetchMock.mock.calls.length).toBe(calls)
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
 })

@@ -471,6 +471,24 @@ h3 {
   border-color: color-mix(in srgb, var(--up) 45%, transparent);
 }
 
+.alerts__status {
+  display: inline-block;
+  margin-top: 0.4rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+}
+
+.alerts__status.is-sent {
+  border-color: color-mix(in srgb, var(--up) 55%, transparent);
+}
+
+.alerts__status.is-failed {
+  border-color: color-mix(in srgb, var(--down) 55%, transparent);
+}
+
 @media (min-width: 820px) {
   .layout {
     grid-template-columns: 340px 1fr;

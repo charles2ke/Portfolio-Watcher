@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertsPanel } from './components/AlertsPanel'
 import { Header } from './components/Header'
 import { LoginScreen } from './components/LoginScreen'
@@ -7,12 +7,14 @@ import { TickerCard } from './components/TickerCard'
 import { WatchForm } from './components/WatchForm'
 import { completeSignIn, loadUser, signIn, signOut } from './lib/auth'
 import { evaluateWatches } from './lib/alerts'
+import { alertKey, deliverAlerts } from './lib/notifications'
 import { fetchQuote } from './lib/market'
 import { applyTheme, initialTheme, nextTheme } from './lib/theme'
 import { createWatch, loadWatches, removeWatch, saveWatches } from './lib/watchlist'
 import { newId } from './lib/ids'
 import { navigate } from './lib/navigation'
 import type { WatchDraft } from './lib/watchlist'
+import type { AlertDelivery } from './lib/notifications'
 import type { Provider, Quote, Theme, User, Watch } from './lib/types'
 
 const REFRESH_MS = 15000
@@ -26,6 +28,8 @@ export default function App() {
   const [theme, setTheme] = useState<Theme>(() => initialTheme())
   const [tick, setTick] = useState(0)
   const [setupComplete, setSetupComplete] = useState(watches.length > 0)
+  const [deliveries, setDeliveries] = useState<Record<string, AlertDelivery>>({})
+  const sentKeys = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     applyTheme(theme)
@@ -80,6 +84,30 @@ export default function App() {
 
   const alerts = useMemo(() => evaluateWatches(watches, quotes), [watches, quotes])
 
+  useEffect(() => {
+    let cancelled = false
+    const sent = sentKeys.current
+    const previouslySent = new Set(sent)
+    for (const alert of alerts) sent.add(alertKey(alert))
+    void deliverAlerts(
+      alerts,
+      previouslySent,
+      import.meta.env as Record<string, string | undefined>,
+    ).then(
+      (results) => {
+        if (cancelled || results.length === 0) return
+        setDeliveries((current) => {
+          const next = { ...current }
+          for (const result of results) next[result.key] = result
+          return next
+        })
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [alerts])
+
   if (!user) return <LoginScreen onSignIn={handleSignIn} />
 
   if (!setupComplete) return <SetupPage onComplete={handleSetupComplete} />
@@ -95,7 +123,7 @@ export default function App() {
       <main className="layout">
         <div className="layout__side">
           <WatchForm watches={watches} onAdd={handleAdd} />
-          <AlertsPanel alerts={alerts} />
+          <AlertsPanel alerts={alerts} deliveries={deliveries} />
         </div>
         <section className="layout__main" aria-labelledby="watchlist-title">
           <h2 id="watchlist-title">Your watchlist</h2>

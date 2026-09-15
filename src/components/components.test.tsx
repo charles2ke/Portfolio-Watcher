@@ -114,6 +114,31 @@ describe('AlertsPanel', () => {
     )
     expect(screen.getByRole('listitem')).toHaveTextContent('MSFT dropped 7.00%')
   })
+
+  it('shows the delivery status of an alert', () => {
+    render(
+      <AlertsPanel
+        alerts={[
+          {
+            symbol: 'MSFT',
+            direction: 'rise',
+            changePercent: 9,
+            threshold: 5,
+            channels: ['email'],
+            destinations: ['ada@example.com'],
+          },
+        ]}
+        deliveries={{
+          'MSFT:rise:5': {
+            key: 'MSFT:rise:5',
+            status: 'sent',
+            detail: 'Delivered to ada@example.com.',
+          },
+        }}
+      />,
+    )
+    expect(screen.getByTestId('alert-status-MSFT')).toHaveTextContent('Sent')
+  })
 })
 
 describe('TickerCard', () => {
