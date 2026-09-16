@@ -21,16 +21,10 @@ describe('resolveNotifier', () => {
     expect(resolveNotifier({ VITE_ALERT_WEBHOOK_URL: '  ' })).toBeNull()
   })
 
-  it('reads the webhook and optional token', () => {
+  it('reads the webhook, trimmed', () => {
     expect(resolveNotifier({ VITE_ALERT_WEBHOOK_URL: ' https://relay.example/alerts ' })).toEqual({
       url: 'https://relay.example/alerts',
     })
-    expect(
-      resolveNotifier({
-        VITE_ALERT_WEBHOOK_URL: 'https://relay.example/alerts',
-        VITE_ALERT_WEBHOOK_TOKEN: ' abc ',
-      }),
-    ).toEqual({ url: 'https://relay.example/alerts', token: 'abc' })
   })
 })
 
@@ -74,19 +68,11 @@ describe('deliverAlerts', () => {
   it('posts pending alerts to the relay', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true })
     vi.stubGlobal('fetch', fetchMock)
-    const results = await deliverAlerts(
-      [alert],
-      new Set(),
-      { ...env, VITE_ALERT_WEBHOOK_TOKEN: 'secret' },
-      () => '2024-01-02T00:00:00.000Z',
-    )
+    const results = await deliverAlerts([alert], new Set(), env, () => '2024-01-02T00:00:00.000Z')
     expect(results[0]).toMatchObject({ key: 'MSFT:dip:5', status: 'sent' })
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
     expect(url).toBe('https://relay.example/alerts')
-    expect(init.headers).toMatchObject({
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer ' + 'secret',
-    })
+    expect(init.headers).toEqual({ 'Content-Type': 'application/json' })
     expect(JSON.parse(String(init.body))).toMatchObject({ symbol: 'MSFT', direction: 'dip' })
   })
 

@@ -40,7 +40,6 @@ local demo session and quotes come from a deterministic offline price series.
 | `VITE_MARKET_PROVIDER` | Market data vendor: `finnhub` or `alphavantage`. |
 | `VITE_MARKET_API_KEY` | API key for the selected market data vendor. |
 | `VITE_ALERT_WEBHOOK_URL` | Relay endpoint that delivers triggered alerts over email, SMS and WhatsApp. |
-| `VITE_ALERT_WEBHOOK_TOKEN` | Optional bearer token sent with each alert webhook request. |
 
 Add them to a `.env.local` file for local development, or as repository variables consumed by the
 Pages workflow for production.
@@ -51,9 +50,9 @@ Pages workflow for production.
 | --- | --- | --- |
 | Microsoft Entra ID / Google | `VITE_MICROSOFT_CLIENT_ID`, `VITE_MICROSOFT_TENANT_ID`, `VITE_GOOGLE_CLIENT_ID` | Real OpenID Connect redirect sign-in; falls back to a local demo session. |
 | Finnhub | `VITE_MARKET_PROVIDER=finnhub`, `VITE_MARKET_API_KEY` | Live price and previous close from `/quote`; the sparkline uses the day's open, low, high and current price. |
-| Alpha Vantage | `VITE_MARKET_PROVIDER=alphavantage`, `VITE_MARKET_API_KEY` | 5-minute intraday closes power the price and the sparkline. |
+| Alpha Vantage | `VITE_MARKET_PROVIDER=alphavantage`, `VITE_MARKET_API_KEY` | Live price and previous close from `GLOBAL_QUOTE`; the sparkline uses the day's open, low, high and current price. |
 | Self-hosted quote API | `VITE_QUOTE_API_URL` | The app's own contract: `{ price, previousClose?, currency?, series[] }`. |
-| Alert relay (email / SMS / WhatsApp) | `VITE_ALERT_WEBHOOK_URL`, `VITE_ALERT_WEBHOOK_TOKEN` | Every newly triggered threshold is POSTed once; the alerts panel shows `Sent`, `Failed` or `In-app only`. |
+| Alert relay (email / SMS / WhatsApp) | `VITE_ALERT_WEBHOOK_URL` | Every newly triggered threshold is POSTed once; the alerts panel shows `Sent`, `Failed` or `In-app only`. |
 
 Any failing or missing integration degrades gracefully: quotes fall back to the deterministic
 offline series and alerts remain visible in the app.
@@ -78,8 +77,9 @@ The browser POSTs a JSON body to `VITE_ALERT_WEBHOOK_URL`:
 Point it at a small serverless function that forwards the payload to your providers (for example
 SendGrid for email and Twilio for SMS and WhatsApp). Because this is a static site, provider
 credentials must live in that relay — never in the frontend bundle. Anything in a `VITE_` variable
-is public, so scope market data keys to read-only quote access and protect the relay with
-`VITE_ALERT_WEBHOOK_TOKEN` plus an origin allow-list.
+is public, so scope market data keys to read-only quote access. Authenticate and rate-limit the
+relay itself (for example an origin allow-list or a secret known only to the relay) — a browser
+cannot hold a credential that stays secret.
 
 ## Testing
 

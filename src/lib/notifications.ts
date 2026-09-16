@@ -22,7 +22,6 @@ export interface AlertPayload {
 
 export interface NotifierConfig {
   url: string
-  token?: string
 }
 
 /**
@@ -30,12 +29,16 @@ export interface NotifierConfig {
  * function in front of SendGrid for email and Twilio for SMS/WhatsApp) so that
  * vendor credentials never ship in the browser bundle. Without a webhook the
  * app only lists the alerts in the UI.
+ *
+ * Authentication and rate limiting for that relay must happen server-side
+ * (for example an origin allow-list or a secret held only by the relay
+ * itself) — anything shipped as a `VITE_` variable is public in the compiled
+ * bundle and cannot act as an auth credential.
  */
 export function resolveNotifier(env: Record<string, string | undefined>): NotifierConfig | null {
   const url = env.VITE_ALERT_WEBHOOK_URL?.trim()
   if (!url) return null
-  const token = env.VITE_ALERT_WEBHOOK_TOKEN?.trim()
-  return token ? { url, token } : { url }
+  return { url }
 }
 
 /** Stable identity of an alert so the same threshold crossing is sent once. */
@@ -57,12 +60,10 @@ export function buildAlertPayload(alert: TriggeredAlert, sentAt: string): AlertP
 }
 
 async function post(config: NotifierConfig, payload: AlertPayload): Promise<boolean> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (config.token) headers.Authorization = 'Bearer ' + config.token
   try {
     const response = await fetch(config.url, {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     })
     return response.ok

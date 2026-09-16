@@ -40,7 +40,7 @@ export default function App() {
   }, [watches])
 
   useEffect(() => {
-    if (watches.length === 0) return
+    if (!user || watches.length === 0) return
     let cancelled = false
     void Promise.all(watches.map((watch) => fetchQuote(watch.symbol, tick))).then((results) => {
       if (cancelled) return
@@ -53,7 +53,7 @@ export default function App() {
     return () => {
       cancelled = true
     }
-  }, [watches, tick])
+  }, [user, watches, tick])
 
   useEffect(() => {
     const timer = globalThis.setInterval(() => setTick((value) => value + 1), REFRESH_MS)
@@ -85,6 +85,7 @@ export default function App() {
   const alerts = useMemo(() => evaluateWatches(watches, quotes), [watches, quotes])
 
   useEffect(() => {
+    if (!user) return
     let cancelled = false
     const sent = sentKeys.current
     const previouslySent = new Set(sent)
@@ -106,7 +107,7 @@ export default function App() {
     return () => {
       cancelled = true
     }
-  }, [alerts])
+  }, [user, alerts])
 
   if (!user) return <LoginScreen onSignIn={handleSignIn} />
 

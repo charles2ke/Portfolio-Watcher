@@ -36,43 +36,53 @@ describe('parseFinnhub', () => {
 
 describe('parseAlphaVantage', () => {
   const payload = {
-    'Meta Data': { '1. Information': 'Intraday' },
-    'Time Series (5min)': {
-      '2024-01-02 10:05:00': { '4. close': '110.0000' },
-      '2024-01-02 10:00:00': { '4. close': '100.0000' },
+    'Global Quote': {
+      '01. symbol': 'MSFT',
+      '02. open': '101.0000',
+      '03. high': '112.0000',
+      '04. low': '99.0000',
+      '05. price': '110.0000',
+      '08. previous close': '100.0000',
     },
   }
 
-  it('orders candles chronologically', () => {
+  it('maps a quote payload and builds a series from the day range', () => {
     expect(parseAlphaVantage(payload, 'MSFT')).toEqual({
       symbol: 'MSFT',
       price: 110,
       previousClose: 100,
       changePercent: 10,
       currency: 'USD',
-      series: [100, 110],
+      series: [100, 101, 99, 112, 110],
     })
   })
 
-  it('skips malformed candles', () => {
+  it('drops missing range values', () => {
     const quote = parseAlphaVantage(
       {
-        'Time Series (5min)': {
-          '2024-01-02 10:00:00': { '4. close': '100' },
-          '2024-01-02 10:05:00': 'nope',
-          '2024-01-02 10:10:00': { '4. close': 'n/a' },
+        'Global Quote': {
+          '05. price': '110.0000',
+          '08. previous close': '100.0000',
+          '02. open': '0',
+          '04. low': null,
+          '03. high': 'x',
         },
       },
       'MSFT',
     )
-    expect(quote?.series).toEqual([100])
+    expect(quote?.series).toEqual([100, 110])
   })
 
   it('rejects unusable payloads', () => {
     expect(parseAlphaVantage(null, 'MSFT')).toBeNull()
     expect(parseAlphaVantage({ Note: 'rate limited' }, 'MSFT')).toBeNull()
-    expect(parseAlphaVantage({ 'Time Series (5min)': 'bad' }, 'MSFT')).toBeNull()
-    expect(parseAlphaVantage({ 'Time Series (5min)': {} }, 'MSFT')).toBeNull()
+    expect(parseAlphaVantage({ 'Global Quote': {} }, 'MSFT')).toBeNull()
+    expect(
+      parseAlphaVantage({ 'Global Quote': { '05. price': '0', '08. previous close': '100' } }, 'MSFT'),
+    ).toBeNull()
+    expect(
+      parseAlphaVantage({ 'Global Quote': { '05. price': '110', '08. previous close': '0' } }, 'MSFT'),
+    ).toBeNull()
   })
 })
 
@@ -131,7 +141,7 @@ describe('resolveQuoteSource', () => {
     })
     expect(source?.provider).toBe('alphavantage')
     expect(source?.url('MSFT')).toBe(
-      'https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&interval=5min&symbol=MSFT&apikey=key',
+      'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=MSFT&apikey=key',
     )
   })
 })

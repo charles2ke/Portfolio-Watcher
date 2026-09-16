@@ -60,25 +60,27 @@ export function parseFinnhub(payload: unknown, symbol: string): Quote | null {
 }
 
 /**
- * Alpha Vantage `TIME_SERIES_INTRADAY` returns newest-first candles keyed by
- * timestamp; the closes are reversed into a chronological series.
+ * Alpha Vantage `GLOBAL_QUOTE` returns the live price and previous close for a
+ * single symbol directly, avoiding the ambiguity of guessing a trading-day
+ * boundary from an intraday candle series; the sparkline is built from the
+ * day's open, low, high and current price, mirroring the Finnhub adapter.
  */
 export function parseAlphaVantage(payload: unknown, symbol: string): Quote | null {
   const data = record(payload)
   if (!data) return null
-  const key = Object.keys(data).find((name) => name.startsWith('Time Series'))
-  const candles = key === undefined ? null : record(data[key])
-  if (!candles) return null
-  const closes = Object.keys(candles)
-    .sort()
-    .map((timestamp) => {
-      const candle = record(candles[timestamp])
-      return candle === null ? null : numeric(candle['4. close'])
-    })
-    .filter((value): value is number => value !== null)
-  if (closes.length === 0) return null
-  const price = closes[closes.length - 1]
-  return buildQuote(symbol, price, closes[0], 'USD', closes)
+  const quote = record(data['Global Quote'])
+  if (!quote) return null
+  const price = numeric(quote['05. price'])
+  const previousClose = numeric(quote['08. previous close'])
+  if (price === null || price === 0 || previousClose === null || previousClose === 0) return null
+  const series = [
+    previousClose,
+    numeric(quote['02. open']),
+    numeric(quote['04. low']),
+    numeric(quote['03. high']),
+    price,
+  ].filter((value): value is number => value !== null && value !== 0)
+  return buildQuote(symbol, price, previousClose, 'USD', series)
 }
 
 interface CustomPayload {
@@ -131,7 +133,7 @@ export function resolveQuoteSource(env: Record<string, string | undefined>): Quo
     return {
       provider: 'alphavantage',
       url: (symbol) =>
-        `https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&interval=5min&symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(apiKey)}`,
+        `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(apiKey)}`,
       parse: parseAlphaVantage,
     }
   }
