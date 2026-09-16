@@ -31,6 +31,10 @@ jobs:
           VITE_MICROSOFT_CLIENT_ID: ${{ vars.VITE_MICROSOFT_CLIENT_ID }}
           VITE_MICROSOFT_TENANT_ID: ${{ vars.VITE_MICROSOFT_TENANT_ID }}
           VITE_QUOTE_API_URL: ${{ vars.VITE_QUOTE_API_URL }}
+          VITE_MARKET_PROVIDER: ${{ vars.VITE_MARKET_PROVIDER }}
+          VITE_MARKET_API_KEY: ${{ vars.VITE_MARKET_API_KEY }}
+          VITE_ALERT_WEBHOOK_URL: ${{ vars.VITE_ALERT_WEBHOOK_URL }}
+          VITE_ALERT_WEBHOOK_TOKEN: ${{ vars.VITE_ALERT_WEBHOOK_TOKEN }}
         run: npm run build
       - name: Add a SPA fallback
         run: cp dist/index.html dist/404.html
