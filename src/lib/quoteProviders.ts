@@ -72,7 +72,7 @@ export function parseAlphaVantage(payload: unknown, symbol: string): Quote | nul
   if (!quote) return null
   const price = numeric(quote['05. price'])
   const previousClose = numeric(quote['08. previous close'])
-  if (price === null || price === 0 || previousClose === null || previousClose === 0) return null
+  if (price === null || previousClose === null) return null
   const series = [
     previousClose,
     numeric(quote['02. open']),

@@ -77,12 +77,21 @@ describe('parseAlphaVantage', () => {
     expect(parseAlphaVantage(null, 'MSFT')).toBeNull()
     expect(parseAlphaVantage({ Note: 'rate limited' }, 'MSFT')).toBeNull()
     expect(parseAlphaVantage({ 'Global Quote': {} }, 'MSFT')).toBeNull()
+  })
+
+  it('accepts a zero-valued price or previous close', () => {
     expect(
-      parseAlphaVantage({ 'Global Quote': { '05. price': '0', '08. previous close': '100' } }, 'MSFT'),
-    ).toBeNull()
+      parseAlphaVantage(
+        { 'Global Quote': { '05. price': '0', '08. previous close': '100' } },
+        'MSFT',
+      ),
+    ).toMatchObject({ price: 0, previousClose: 100 })
     expect(
-      parseAlphaVantage({ 'Global Quote': { '05. price': '110', '08. previous close': '0' } }, 'MSFT'),
-    ).toBeNull()
+      parseAlphaVantage(
+        { 'Global Quote': { '05. price': '110', '08. previous close': '0' } },
+        'MSFT',
+      ),
+    ).toMatchObject({ price: 110, previousClose: 0 })
   })
 })
 
