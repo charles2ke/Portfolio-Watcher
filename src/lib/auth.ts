@@ -6,6 +6,8 @@ interface ProviderConfig {
   authorizeUrl: string
   clientId: string
   scope: string
+  /** Tenant the Microsoft token must come from; `common` accepts any tenant. */
+  tenant?: string
 }
 
 const NONCE_KEY = 'pw.auth.nonce'
@@ -28,19 +30,27 @@ export function getProviderConfig(provider: Provider): ProviderConfig | null {
     }
   }
   if (provider === 'microsoft' && env.VITE_MICROSOFT_CLIENT_ID) {
-    const tenant = env.VITE_MICROSOFT_TENANT_ID ?? 'common'
+    const tenant = env.VITE_MICROSOFT_TENANT_ID?.trim() || 'common'
     return {
       label: 'Microsoft',
       authorizeUrl: `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize`,
       clientId: env.VITE_MICROSOFT_CLIENT_ID,
       scope: 'openid email profile',
+      tenant,
     }
   }
   return null
 }
 
-export function createNonce(random: () => number = Math.random): string {
-  return `${Date.now().toString(36)}.${random().toString(36).slice(2, 12)}`
+/**
+ * 128 bits of cryptographically secure randomness. The `nonce` and `state`
+ * values are the only binding between a redirect we started and the token that
+ * comes back, so they must never be guessable — `Math.random` is not.
+ */
+export function createNonce(): string {
+  const bytes = new Uint8Array(16)
+  globalThis.crypto.getRandomValues(bytes)
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 export function buildAuthorizeUrl(
@@ -125,11 +135,49 @@ function clearHash(): void {
 }
 
 /**
- * Completes a redirect sign-in by reading the URL fragment. The token is only
- * accepted when it matches the nonce created when the flow started, and the
- * fragment is always cleared so the token never lingers in the browser history.
+ * Accepts only issuers that belong to the configured provider, so a token
+ * minted by an unrelated identity provider cannot open a session here.
  */
-export function completeSignIn(hash: string): User | null {
+export function isTrustedIssuer(provider: Provider, issuer: unknown, tenant?: string): boolean {
+  if (typeof issuer !== 'string') return false
+  if (provider === 'google') {
+    return issuer === 'https://accounts.google.com' || issuer === 'accounts.google.com'
+  }
+  if (provider !== 'microsoft') return false
+  const match = /^https:\/\/login\.microsoftonline\.com\/([^/]+)\/v2\.0$/.exec(issuer)
+  if (!match) return false
+  const multiTenant = tenant === undefined || ['common', 'organizations', 'consumers'].includes(tenant)
+  return multiTenant || match[1].toLowerCase() === tenant.toLowerCase()
+}
+
+/**
+ * Claim checks that can be done in a browser without a backend: the token must
+ * come from the configured provider, be addressed to this client and still be
+ * valid. Signature verification needs the provider's JWKS and a server-side
+ * check, so the resulting session is trusted locally only — every request that
+ * leaves the browser must be authorised by the receiving service itself.
+ */
+export function hasValidClaims(
+  payload: Record<string, unknown>,
+  config: ProviderConfig,
+  provider: Provider,
+  nowMs: number,
+): boolean {
+  if (!isTrustedIssuer(provider, payload.iss, config.tenant)) return false
+  const audience = payload.aud
+  const audiences = Array.isArray(audience) ? audience : [audience]
+  if (!audiences.includes(config.clientId)) return false
+  if (typeof payload.exp !== 'number' || payload.exp * 1000 <= nowMs) return false
+  return true
+}
+
+/**
+ * Completes a redirect sign-in by reading the URL fragment. The token is only
+ * accepted when its `state` and `nonce` match the values created when the flow
+ * started and its issuer, audience and expiry check out; the fragment is always
+ * cleared so the token never lingers in the browser history.
+ */
+export function completeSignIn(hash: string, now: () => number = Date.now): User | null {
   const fragment = new URLSearchParams(hash.replace(/^#/, ''))
   const token = fragment.get('id_token')
   if (!token) return null
@@ -144,6 +192,8 @@ export function completeSignIn(hash: string): User | null {
   if (!payload) return null
   if (expectedNonce === null || payload.nonce !== expectedNonce) return null
   if (expectedState === null || fragment.get('state') !== expectedState) return null
+  const config = getProviderConfig(provider)
+  if (!config || !hasValidClaims(payload, config, provider, now())) return null
   const email = typeof payload.email === 'string' ? payload.email : ''
   const name = typeof payload.name === 'string' ? payload.name : email || 'Signed in user'
   const id = typeof payload.sub === 'string' ? payload.sub : `${provider}-user`
@@ -159,6 +209,12 @@ export function loadUser(): User | null {
   return readJSON<User | null>(STORAGE_KEYS.user, null)
 }
 
+/**
+ * Signing out clears everything the app kept about the person, including the
+ * watchlist — it holds the email addresses and phone numbers used for alerts,
+ * which must not survive on a shared device after the session ends.
+ */
 export function signOut(): void {
   remove(STORAGE_KEYS.user)
+  remove(STORAGE_KEYS.watches)
 }

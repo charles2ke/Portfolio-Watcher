@@ -21,6 +21,10 @@ describe('resolveNotifier', () => {
     expect(resolveNotifier({ VITE_ALERT_WEBHOOK_URL: '  ' })).toBeNull()
   })
 
+  it('refuses a webhook that is not https', () => {
+    expect(resolveNotifier({ VITE_ALERT_WEBHOOK_URL: 'http://relay.example/alerts' })).toBeNull()
+  })
+
   it('reads the webhook, trimmed', () => {
     expect(resolveNotifier({ VITE_ALERT_WEBHOOK_URL: ' https://relay.example/alerts ' })).toEqual({
       url: 'https://relay.example/alerts',

@@ -51,6 +51,15 @@ describe('App', () => {
     await waitFor(() => expect(screen.getAllByRole('status').length).toBeGreaterThan(0))
   })
 
+  it('wipes the stored watchlist on sign out', async () => {
+    writeJSON(STORAGE_KEYS.user, { id: '1', name: 'Ada', email: '', provider: 'google' })
+    writeJSON(STORAGE_KEYS.watches, [watch])
+    render(<App />)
+    await userEvent.click(screen.getByRole('button', { name: 'Log out' }))
+    expect(screen.getByRole('heading', { name: /Track every move/ })).toBeInTheDocument()
+    expect(localStorage.getItem(STORAGE_KEYS.watches)).toBeNull()
+  })
+
   it('completes a redirect sign-in from the url fragment', async () => {
     vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'google-id')
     render(<App />)
@@ -61,7 +70,16 @@ describe('App', () => {
     const state = params.get('state')
     cleanup()
 
-    const payload = btoa(JSON.stringify({ sub: 'abc', name: 'Grace', nonce })).replace(/=+$/, '')
+    const payload = btoa(
+      JSON.stringify({
+        sub: 'abc',
+        name: 'Grace',
+        nonce,
+        iss: 'https://accounts.google.com',
+        aud: 'google-id',
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      }),
+    ).replace(/=+$/, '')
     window.location.hash = `#id_token=header.${payload}.sig&state=${state}`
     render(<App />)
     await userEvent.click(screen.getByRole('button', { name: /Get started/ }))

@@ -1,5 +1,6 @@
 import type { AlertChannel, TriggeredAlert } from './types'
 import { describeAlert } from './alerts'
+import { isSecureEndpoint } from './endpoints'
 
 export type DeliveryStatus = 'sent' | 'failed' | 'skipped'
 
@@ -37,7 +38,7 @@ export interface NotifierConfig {
  */
 export function resolveNotifier(env: Record<string, string | undefined>): NotifierConfig | null {
   const url = env.VITE_ALERT_WEBHOOK_URL?.trim()
-  if (!url) return null
+  if (!url || !isSecureEndpoint(url)) return null
   return { url }
 }
 

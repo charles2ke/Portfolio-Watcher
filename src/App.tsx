@@ -36,8 +36,9 @@ export default function App() {
   }, [theme])
 
   useEffect(() => {
-    saveWatches(watches)
-  }, [watches])
+    // Never re-create the store after sign-out: it holds alert destinations.
+    if (user) saveWatches(watches)
+  }, [user, watches])
 
   useEffect(() => {
     if (!user || watches.length === 0) return
@@ -68,6 +69,11 @@ export default function App() {
   const handleSignOut = useCallback(() => {
     signOut()
     setUser(null)
+    setWatches([])
+    setQuotes({})
+    setDeliveries({})
+    setSetupComplete(false)
+    sentKeys.current.clear()
   }, [])
 
   const handleSetupComplete = useCallback(() => {

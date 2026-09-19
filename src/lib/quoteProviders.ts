@@ -1,5 +1,6 @@
 import type { Quote } from './types'
 import { percentChange, roundTo } from './numbers'
+import { isSecureEndpoint } from './endpoints'
 
 /** Market data vendors the app can talk to directly from the browser. */
 export type QuoteProvider = 'finnhub' | 'alphavantage' | 'custom'
@@ -110,8 +111,8 @@ export function parseCustom(payload: unknown, symbol: string): Quote | null {
  * requires `VITE_MARKET_API_KEY`. Returns `null` in demo mode.
  */
 export function resolveQuoteSource(env: Record<string, string | undefined>): QuoteSource | null {
-  const apiUrl = env.VITE_QUOTE_API_URL
-  if (apiUrl) {
+  const apiUrl = env.VITE_QUOTE_API_URL?.trim()
+  if (apiUrl && isSecureEndpoint(apiUrl)) {
     return {
       provider: 'custom',
       url: (symbol) => `${apiUrl}${encodeURIComponent(symbol)}`,
