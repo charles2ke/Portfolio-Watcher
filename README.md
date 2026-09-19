@@ -44,6 +44,31 @@ local demo session and quotes come from a deterministic offline price series.
 Add them to a `.env.local` file for local development, or as repository variables consumed by the
 Pages workflow for production.
 
+> **Every `VITE_` value is public.** It is inlined into the JavaScript bundle that anyone can read,
+> so `VITE_MARKET_API_KEY` must be a read-only quote key you are happy to expose (or, better, keep
+> the key in a proxy behind `VITE_QUOTE_API_URL`). `VITE_QUOTE_API_URL` and `VITE_ALERT_WEBHOOK_URL`
+> are ignored unless they are HTTPS or a same-origin path.
+
+## Security and privacy
+
+- **Your data stays on your device.** The session, watchlist and theme live in `localStorage`; there
+  is no Portfolio Watcher backend and nothing is analytics-tracked.
+- **Signing out wipes it.** Logging out removes the session *and* the watchlist, because the
+  watchlist holds the email addresses and phone numbers used for alerts — they must not outlive the
+  session on a shared device.
+- **What leaves the browser.** Ticker symbols go to the configured quote API; a triggered alert
+  POSTs the symbol, the movement and the destinations you entered to your own relay. Both must be
+  HTTPS. In demo mode nothing leaves the browser at all.
+- **Sign-in.** OpenID Connect redirects use a `state` and `nonce` generated from
+  `crypto.getRandomValues`, and the returned token is checked for issuer, audience and expiry before
+  a session is created. The signature cannot be verified client-side, so the session is only
+  trusted on this device — see [SECURITY.md](SECURITY.md).
+- **Hardened page.** The published build ships a Content-Security-Policy meta tag (no inline
+  scripts, an allow-list of the hosts it may call, `frame-ancestors 'none'`) and a
+  `strict-origin-when-cross-origin` referrer policy.
+
+Vulnerability reports are welcome — see [SECURITY.md](SECURITY.md).
+
 ## Integrations
 
 | Integration | Configuration | Behaviour |

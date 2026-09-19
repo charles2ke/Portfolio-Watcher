@@ -129,6 +129,7 @@ describe('resolveQuoteSource', () => {
   })
 
   it('prefers a self-hosted quote API', () => {
+    expect(resolveQuoteSource({ VITE_QUOTE_API_URL: 'http://api.example/quote/' })).toBeNull()
     const source = resolveQuoteSource({ VITE_QUOTE_API_URL: 'https://api.example/quote/' })
     expect(source?.provider).toBe('custom')
     expect(source?.url('BRK.B')).toBe('https://api.example/quote/BRK.B')

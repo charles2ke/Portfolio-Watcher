@@ -6,6 +6,8 @@ import {
   decodeJwtPayload,
   getProviderConfig,
   guestUser,
+  hasValidClaims,
+  isTrustedIssuer,
   loadUser,
   redirectUri,
   saveUser,
@@ -23,13 +25,30 @@ function base64Url(value: string): string {
   return btoa(binary).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_')
 }
 
-function makeToken(payload: Record<string, unknown>): string {
+const ISSUERS = {
+  google: 'https://accounts.google.com',
+  microsoft: 'https://login.microsoftonline.com/common/v2.0',
+} as const
+
+function rawToken(payload: Record<string, unknown>): string {
   return `header.${base64Url(JSON.stringify(payload))}.signature`
+}
+
+/** A token that satisfies the issuer, audience and expiry checks. */
+function makeToken(payload: Record<string, unknown>): string {
+  const claims = {
+    iss: ISSUERS.google,
+    aud: 'id',
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    ...payload,
+  }
+  return `header.${base64Url(JSON.stringify(claims))}.signature`
 }
 
 /** Starts a redirect flow and returns the nonce and state to echo back. */
 function startFlow(provider: 'google' | 'microsoft'): { nonce: string; state: string } {
   vi.stubEnv(provider === 'google' ? 'VITE_GOOGLE_CLIENT_ID' : 'VITE_MICROSOFT_CLIENT_ID', 'id')
+  vi.stubEnv('VITE_MICROSOFT_TENANT_ID', '')
   let authorizeUrl = ''
   signIn(provider, (url) => {
     authorizeUrl = url
@@ -81,9 +100,9 @@ describe('authorize url', () => {
     expect(url.searchParams.get('state')).toBe('state-1')
   })
 
-  it('creates unique nonces', () => {
-    expect(createNonce(() => 0.5)).toMatch(/\./)
-    expect(createNonce()).not.toBe(createNonce(() => 0.1))
+  it('creates unpredictable nonces', () => {
+    expect(createNonce()).toMatch(/^[0-9a-f]{32}$/)
+    expect(createNonce()).not.toBe(createNonce())
   })
 
   it('derives the redirect uri from the current location', () => {
@@ -93,11 +112,11 @@ describe('authorize url', () => {
 
 describe('decodeJwtPayload', () => {
   it('decodes a payload', () => {
-    expect(decodeJwtPayload(makeToken({ email: 'a@b.co' }))).toEqual({ email: 'a@b.co' })
+    expect(decodeJwtPayload(rawToken({ email: 'a@b.co' }))).toEqual({ email: 'a@b.co' })
   })
 
   it('decodes unicode payloads', () => {
-    expect(decodeJwtPayload(makeToken({ name: 'Ünicode ✓' }))).toEqual({ name: 'Ünicode ✓' })
+    expect(decodeJwtPayload(rawToken({ name: 'Ünicode ✓' }))).toEqual({ name: 'Ünicode ✓' })
   })
 
   it('rejects malformed tokens', () => {
@@ -192,8 +211,63 @@ describe('completeSignIn', () => {
 
   it('remembers the pending provider', () => {
     const { nonce, state } = startFlow('microsoft')
-    const user = completeSignIn(callbackHash(makeToken({ sub: 'abc', nonce }), state))
+    const token = makeToken({ sub: 'abc', nonce, iss: ISSUERS.microsoft })
+    const user = completeSignIn(callbackHash(token, state))
     expect(user).toMatchObject({ provider: 'microsoft', id: 'abc' })
+  })
+
+  it('rejects a token from another issuer, audience or an expired one', () => {
+    const forged = startFlow('google')
+    const wrongIssuer = makeToken({ sub: 'abc', nonce: forged.nonce, iss: 'https://evil.test' })
+    expect(completeSignIn(callbackHash(wrongIssuer, forged.state))).toBeNull()
+
+    const other = startFlow('google')
+    const wrongAudience = makeToken({ sub: 'abc', nonce: other.nonce, aud: 'another-app' })
+    expect(completeSignIn(callbackHash(wrongAudience, other.state))).toBeNull()
+
+    const stale = startFlow('google')
+    const expired = makeToken({
+      sub: 'abc',
+      nonce: stale.nonce,
+      exp: Math.floor(Date.now() / 1000) - 10,
+    })
+    expect(completeSignIn(callbackHash(expired, stale.state))).toBeNull()
+  })
+
+  it('rejects a callback for a provider that is no longer configured', () => {
+    const { nonce, state } = startFlow('google')
+    const token = makeToken({ sub: 'abc', nonce })
+    vi.unstubAllEnvs()
+    expect(completeSignIn(callbackHash(token, state))).toBeNull()
+  })
+})
+
+describe('token claims', () => {
+  const config = { label: 'Google', authorizeUrl: '', clientId: 'id', scope: '' }
+
+  it('accepts only issuers belonging to the provider', () => {
+    expect(isTrustedIssuer('google', 'accounts.google.com')).toBe(true)
+    expect(isTrustedIssuer('google', ISSUERS.google)).toBe(true)
+    expect(isTrustedIssuer('google', 42)).toBe(false)
+    expect(isTrustedIssuer('guest', ISSUERS.google)).toBe(false)
+    expect(isTrustedIssuer('microsoft', 'https://login.microsoftonline.com/tid/v2.0')).toBe(true)
+    expect(isTrustedIssuer('microsoft', 'https://login.microsoftonline.com.evil.test/a/v2.0'))
+      .toBe(false)
+    expect(isTrustedIssuer('microsoft', 'https://login.microsoftonline.com/TID/v2.0', 'tid'))
+      .toBe(true)
+    expect(isTrustedIssuer('microsoft', 'https://login.microsoftonline.com/other/v2.0', 'tid'))
+      .toBe(false)
+    expect(isTrustedIssuer('microsoft', 'https://login.microsoftonline.com/any/v2.0', 'common'))
+      .toBe(true)
+  })
+
+  it('accepts an audience list that contains the client id', () => {
+    const base = { iss: ISSUERS.google, exp: Math.floor(Date.now() / 1000) + 60 }
+    expect(hasValidClaims({ ...base, aud: ['id', 'other'] }, config, 'google', Date.now()))
+      .toBe(true)
+    expect(hasValidClaims({ ...base, aud: ['other'] }, config, 'google', Date.now())).toBe(false)
+    expect(hasValidClaims({ ...base, aud: 'id', exp: undefined }, config, 'google', Date.now()))
+      .toBe(false)
   })
 })
 
@@ -203,5 +277,12 @@ describe('session', () => {
     expect(loadUser()).toEqual(guestUser())
     signOut()
     expect(loadUser()).toBeNull()
+  })
+
+  it('clears the watchlist so alert destinations do not outlive the session', () => {
+    saveUser(guestUser())
+    localStorage.setItem('pw.watches', JSON.stringify([{ email: 'trader@example.com' }]))
+    signOut()
+    expect(localStorage.getItem('pw.watches')).toBeNull()
   })
 })
