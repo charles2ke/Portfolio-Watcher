@@ -5,7 +5,7 @@
  * handed to a `javascript:`/`data:` URL.
  */
 export function isSecureEndpoint(url: string): boolean {
-  if (url.startsWith('/')) return true
+  if (url.startsWith('/') && !url.startsWith('//')) return true
   try {
     return new URL(url).protocol === 'https:'
   } catch {

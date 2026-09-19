@@ -12,5 +12,6 @@ describe('isSecureEndpoint', () => {
     expect(isSecureEndpoint('javascript:alert(1)')).toBe(false)
     expect(isSecureEndpoint('data:text/plain,hi')).toBe(false)
     expect(isSecureEndpoint('relay.example/alerts')).toBe(false)
+    expect(isSecureEndpoint('//evil.example/path')).toBe(false)
   })
 })
