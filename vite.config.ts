@@ -9,9 +9,11 @@ const VENDOR_ENDPOINTS = [
 ]
 
 function originOf(url: string | undefined): string | null {
-  if (!url) return null
+  const trimmed = url?.trim()
+  if (!trimmed || trimmed.startsWith('/')) return null
   try {
-    return new URL(url).origin
+    const parsed = new URL(trimmed)
+    return parsed.protocol === 'https:' ? parsed.origin : null
   } catch {
     return null
   }
