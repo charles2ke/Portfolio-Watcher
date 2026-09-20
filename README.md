@@ -87,8 +87,8 @@ Pages workflow for production.
    channels and destinations for each one.
 3. Quotes refresh every 15 seconds from the configured provider (or a deterministic offline series
    in demo mode) and feed the sparkline on each ticker card.
-4. When a movement crosses a threshold the alert is shown in the alerts panel and POSTed once to
-   your relay, which is responsible for the actual email, SMS or WhatsApp delivery.
+4. When a movement crosses a threshold the alert is shown in the alerts panel and, when configured,
+   POSTed once to your relay, which is responsible for the actual email, SMS or WhatsApp delivery.
 
 ## Project structure
 
@@ -177,12 +177,7 @@ every push and pull request, so run the same commands locally before opening one
 ### Coverage
 
 <!-- coverage:start -->
-| Metric | Coverage |
-| --- | --- |
-| statements | 100% |
-| branches | 100% |
-| functions | 100% |
-| lines | 100% |
+_Run `npm run coverage` to generate the coverage summary._
 <!-- coverage:end -->
 
 ## Automation
