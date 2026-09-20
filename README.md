@@ -177,7 +177,12 @@ every push and pull request, so run the same commands locally before opening one
 ### Coverage
 
 <!-- coverage:start -->
-_Run `npm run coverage` to generate the coverage summary._
+| Metric | Coverage |
+| --- | --- |
+| statements | 100% |
+| branches | 100% |
+| functions | 100% |
+| lines | 100% |
 <!-- coverage:end -->
 
 ## Automation
