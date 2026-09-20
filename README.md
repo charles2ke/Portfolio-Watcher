@@ -1,10 +1,30 @@
 # Portfolio Watcher
 
+[![CI](https://github.com/charles2ke/Portfolio-Watcher/actions/workflows/ci.yml/badge.svg)](https://github.com/charles2ke/Portfolio-Watcher/actions/workflows/ci.yml)
+[![Security](https://github.com/charles2ke/Portfolio-Watcher/actions/workflows/security.yml/badge.svg)](https://github.com/charles2ke/Portfolio-Watcher/actions/workflows/security.yml)
+[![Deploy to GitHub Pages](https://github.com/charles2ke/Portfolio-Watcher/actions/workflows/pages.yml/badge.svg)](https://github.com/charles2ke/Portfolio-Watcher/actions/workflows/pages.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 An ultra-modern, mobile-first stock watchlist. Sign in with Microsoft, Google or as a guest, add
 the ticker symbols you care about, choose the dip/rise percentage that should alert you, and pick
 whether the alert goes out over email, SMS or WhatsApp.
 
 🔗 **Live app:** https://charles2ke.github.io/Portfolio-Watcher/
+
+## Contents
+
+- [Features](#features)
+- [Getting started](#getting-started)
+- [Configuration](#configuration)
+- [How it works](#how-it-works)
+- [Project structure](#project-structure)
+- [Security and privacy](#security-and-privacy)
+- [Integrations](#integrations)
+- [Testing](#testing)
+- [Automation](#automation)
+- [Scripts](#scripts)
+- [Dependencies](#dependencies)
+- [License](#license)
 
 ## Features
 
@@ -18,15 +38,26 @@ whether the alert goes out over email, SMS or WhatsApp.
 
 ## Getting started
 
+**Prerequisites:** Node.js 22 (the version used by CI) and npm.
+
 ```bash
 npm install
-npm run dev
+npm run dev          # http://localhost:5173
+```
+
+Useful during development:
+
+```bash
+npm run lint         # oxlint
+npm run typecheck    # tsc -b
+npm run build        # production bundle in dist/
+npm run preview      # serve the production bundle on http://localhost:4173
 ```
 
 The app is a fully static single-page app: your session, watchlist and theme live in
 `localStorage`, so it can be hosted on GitHub Pages without a backend.
 
-### Configuration
+## Configuration
 
 All configuration is optional. Without it the app runs in demo mode: identity providers create a
 local demo session and quotes come from a deterministic offline price series.
@@ -48,6 +79,30 @@ Pages workflow for production.
 > so `VITE_MARKET_API_KEY` must be a read-only quote key you are happy to expose (or, better, keep
 > the key in a proxy behind `VITE_QUOTE_API_URL`). `VITE_QUOTE_API_URL` and `VITE_ALERT_WEBHOOK_URL`
 > are ignored unless they are HTTPS or a same-origin path.
+
+## How it works
+
+1. You sign in with Microsoft, Google or as a guest; the session is stored in `localStorage`.
+2. You add ticker symbols and set an independent dip % and rise % threshold plus the alert
+   channels and destinations for each one.
+3. Quotes refresh every 15 seconds from the configured provider (or a deterministic offline series
+   in demo mode) and feed the sparkline on each ticker card.
+4. When a movement crosses a threshold the alert is shown in the alerts panel and POSTed once to
+   your relay, which is responsible for the actual email, SMS or WhatsApp delivery.
+
+## Project structure
+
+```
+src/
+  App.tsx              top-level state, routing and quote refresh loop
+  components/          Header, LoginScreen, SetupPage, WatchForm, TickerCard, Sparkline, AlertsPanel, ThemeToggle
+  lib/                 auth, market + quoteProviders, alerts, notifications, watchlist, storage, theme, endpoints, navigation helpers
+  test/setup.ts        Vitest/Testing Library setup
+e2e/                   Playwright specs (desktop + mobile projects)
+scripts/               update-readme.mjs, which regenerates the auto-managed README sections
+```
+
+Unit tests sit next to the code they cover (`*.test.ts`/`*.test.tsx`).
 
 ## Security and privacy
 
@@ -109,9 +164,15 @@ cannot hold a credential that stays secret.
 ## Testing
 
 ```bash
+npm run test       # unit + component tests (Vitest)
+npm run test:watch # the same tests in watch mode
 npm run coverage   # unit + component tests, enforced at 100% coverage
 npm run test:e2e   # Playwright end-to-end tests (desktop + mobile projects)
 ```
+
+Playwright runs against the production preview server, so run `npx playwright install --with-deps`
+once before the first end-to-end run. CI runs lint, typecheck, build, coverage and Playwright on
+every push and pull request, so run the same commands locally before opening one.
 
 ### Coverage
 
@@ -144,6 +205,9 @@ and renders a blank page. Switching **Source** to **GitHub Actions** stops that 
 `public/.nojekyll` is published alongside the bundle so the output is never Jekyll-processed.
 
 ## Scripts
+
+The table below is regenerated from `package.json` by `npm run readme` — edit the scripts there,
+not here.
 
 <!-- scripts:start -->
 | Script | Description |
