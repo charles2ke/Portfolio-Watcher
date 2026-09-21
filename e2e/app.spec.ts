@@ -8,6 +8,15 @@ async function signInAsGuest(page: Page) {
   await expect(page.getByTestId('current-user')).toContainText('Guest')
 }
 
+async function openModule(page: Page, name: string) {
+  await page.getByRole('navigation', { name: 'Research modules' }).getByRole('button', { name, exact: true }).click()
+  await expect(page.getByRole('heading', { level: 2, name })).toBeVisible()
+}
+
+async function openPriceAlerts(page: Page) {
+  await openModule(page, 'Price Alerts')
+}
+
 test.describe('Portfolio Watcher', () => {
   test('shows the login options', async ({ page }) => {
     await page.goto('/')
@@ -27,6 +36,7 @@ test.describe('Portfolio Watcher', () => {
 
   test('adds a ticker, shows its movement and alerts', async ({ page }) => {
     await signInAsGuest(page)
+    await openPriceAlerts(page)
     await expect(page.getByTestId('watchlist-empty')).toBeVisible()
 
     await page.getByLabel('Ticker symbol').fill('MSFT')
@@ -47,6 +57,7 @@ test.describe('Portfolio Watcher', () => {
 
   test('validates the ticker form', async ({ page }) => {
     await signInAsGuest(page)
+    await openPriceAlerts(page)
     await page.getByLabel('Ticker symbol').fill('123')
     await page.getByRole('button', { name: 'Add to watchlist' }).click()
     await expect(page.getByRole('alert')).toContainText('valid ticker symbol')
@@ -54,6 +65,7 @@ test.describe('Portfolio Watcher', () => {
 
   test('supports SMS and WhatsApp channels', async ({ page }) => {
     await signInAsGuest(page)
+    await openPriceAlerts(page)
     await page.getByRole('checkbox', { name: 'Email' }).uncheck()
     await page.getByRole('checkbox', { name: 'SMS' }).check()
     await page.getByRole('checkbox', { name: 'WhatsApp' }).check()
@@ -76,21 +88,58 @@ test.describe('Portfolio Watcher', () => {
 
   test('persists the watchlist across reloads and logs out', async ({ page }) => {
     await signInAsGuest(page)
+    await openPriceAlerts(page)
     await page.getByLabel('Ticker symbol').fill('AAPL')
     await page.getByLabel('Email address').fill('trader@example.com')
     await page.getByRole('button', { name: 'Add to watchlist' }).click()
     await expect(page.getByTestId('ticker-AAPL')).toBeVisible()
 
     await page.reload()
+    await openPriceAlerts(page)
     await expect(page.getByTestId('ticker-AAPL')).toBeVisible()
 
     await page.getByRole('button', { name: 'Log out' }).click()
     await expect(page.getByRole('button', { name: /guest/i })).toBeVisible()
   })
 
+  test('moves through the research workflow from discovery to reporting', async ({ page }) => {
+    await signInAsGuest(page)
+    await openModule(page, 'Dashboard')
+    await expect(page.getByRole('heading', { level: 2, name: 'Dashboard' })).toBeVisible()
+    await page.screenshot({ path: 'test-results/screenshots/dashboard.png', fullPage: true })
+
+    await openModule(page, 'Discover')
+    await expect(page.getByRole('table', { name: /Screener results/i })).toBeVisible()
+    await page.screenshot({ path: 'test-results/screenshots/screener.png', fullPage: true })
+
+    await page.getByLabel('Search companies, tickers or exchanges').fill('ARCL')
+    await page.locator('.global-search__result').first().click()
+    await expect(page.getByRole('heading', { level: 2, name: 'Company Research' })).toBeVisible()
+    await page.screenshot({ path: 'test-results/screenshots/company-overview.png', fullPage: true })
+
+    await page.getByRole('tab', { name: 'Valuation' }).click()
+    await expect(page.getByText('Implied value per share')).toBeVisible()
+    await page.screenshot({ path: 'test-results/screenshots/dcf.png', fullPage: true })
+    await page.getByRole('button', { name: 'Save DCF as report' }).click()
+
+    await page.getByRole('tab', { name: 'Technicals' }).click()
+    await page.screenshot({ path: 'test-results/screenshots/technicals.png', fullPage: true })
+
+    await openModule(page, 'Portfolio')
+    await page.screenshot({ path: 'test-results/screenshots/portfolio.png', fullPage: true })
+
+    await openModule(page, 'Macro')
+    await page.screenshot({ path: 'test-results/screenshots/macro.png', fullPage: true })
+
+    await openModule(page, 'Reports')
+    await expect(page.getByText(/ARCL · DCF valuation/).first()).toBeVisible()
+    await page.screenshot({ path: 'test-results/screenshots/reports.png', fullPage: true })
+  })
+
   test('has no horizontal overflow on mobile viewports', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 780 })
     await signInAsGuest(page)
+    await openPriceAlerts(page)
     await page.getByLabel('Ticker symbol').fill('NVDA')
     await page.getByLabel('Email address').fill('trader@example.com')
     await page.getByRole('button', { name: 'Add to watchlist' }).click()
