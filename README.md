@@ -38,7 +38,10 @@ report — plus the original price-alert watchlist with email, SMS and WhatsApp 
 - **Google-style movement chart** — sparkline with price, currency and percentage change, refreshed
   every 15 seconds.
 - **Dark theme toggle** — respects your system preference and remembers your choice.
-- **Mobile first** — responsive layout, 44px touch targets and no horizontal overflow at 360px.
+- **Mobile first** — responsive layout, 44px touch targets and no horizontal overflow at 360px:
+  wide research tables scroll inside their own panel and the module bar scrolls with snapping.
+- **Predictable navigation** — opening a module or a company returns you to the top of the page
+  instead of dropping you into the middle of the new view.
 
 ## Research platform
 
@@ -220,8 +223,10 @@ npm run test:e2e   # Playwright end-to-end tests (desktop + mobile projects)
 ```
 
 Playwright runs against the production preview server, so run `npx playwright install --with-deps`
-once before the first end-to-end run. CI runs lint, typecheck, build, coverage and Playwright on
-every push and pull request, so run the same commands locally before opening one.
+once before the first end-to-end run. The suite checks every research module for horizontal
+overflow at 360px and asserts that switching modules scrolls back to the top. CI runs lint,
+typecheck, build, coverage and Playwright on every push and pull request, so run the same commands
+locally before opening one.
 
 ### Coverage
 
