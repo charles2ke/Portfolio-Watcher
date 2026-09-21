@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertsPanel } from './components/AlertsPanel'
+import { ResearchWorkspace } from './research/ui/ResearchWorkspace'
 import { Header } from './components/Header'
 import { LoginScreen } from './components/LoginScreen'
 import { SetupPage } from './components/SetupPage'
@@ -127,31 +128,35 @@ export default function App() {
         onToggleTheme={() => setTheme((current) => nextTheme(current))}
         onSignOut={handleSignOut}
       />
-      <main className="layout">
-        <div className="layout__side">
-          <WatchForm watches={watches} onAdd={handleAdd} />
-          <AlertsPanel alerts={alerts} deliveries={deliveries} />
-        </div>
-        <section className="layout__main" aria-labelledby="watchlist-title">
-          <h2 id="watchlist-title">Your watchlist</h2>
-          {watches.length === 0 ? (
-            <p className="empty" data-testid="watchlist-empty">
-              Add a ticker symbol to start watching price movements.
-            </p>
-          ) : (
-            <div className="grid">
-              {watches.map((watch) => (
-                <TickerCard
-                  key={watch.id}
-                  watch={watch}
-                  quote={quotes[watch.symbol]}
-                  onRemove={handleRemove}
-                />
-              ))}
+      <ResearchWorkspace
+        alertsSlot={
+          <div className="layout">
+            <div className="layout__side">
+              <WatchForm watches={watches} onAdd={handleAdd} />
+              <AlertsPanel alerts={alerts} deliveries={deliveries} />
             </div>
-          )}
-        </section>
-      </main>
+            <section className="layout__main" aria-labelledby="watchlist-title">
+              <h2 id="watchlist-title">Your watchlist</h2>
+              {watches.length === 0 ? (
+                <p className="empty" data-testid="watchlist-empty">
+                  Add a ticker symbol to start watching price movements.
+                </p>
+              ) : (
+                <div className="grid">
+                  {watches.map((watch) => (
+                    <TickerCard
+                      key={watch.id}
+                      watch={watch}
+                      quote={quotes[watch.symbol]}
+                      onRemove={handleRemove}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        }
+      />
     </div>
   )
 }

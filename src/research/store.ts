@@ -29,7 +29,7 @@ export function defaultPortfolio(): Portfolio {
     id: 'core',
     name: 'Core portfolio',
     cash: 25_000,
-    benchmark: 'blend-60-40',
+    benchmark: 'balanced-60-40',
     positions: [
       { ticker: 'ARCL', quantity: 320 },
       { ticker: 'NBLA', quantity: 140 },
