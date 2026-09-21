@@ -29,6 +29,7 @@ import {
   saveRules,
   saveScreens,
   saveWatchlists,
+  selectPortfolio,
 } from '../store'
 import type { SavedScreen } from '../screener'
 import type { InvestorProfile, Portfolio, ResearchReport, ResearchWatchlist } from '../types'
@@ -50,7 +51,7 @@ export function ResearchWorkspace({ alertsSlot }: { alertsSlot: ReactNode }) {
   const [screens, setScreens] = useState<SavedScreen[]>(() => loadScreens())
   const [profile, setProfile] = useState<InvestorProfile>(() => loadProfile())
 
-  const portfolio = portfolios.find((entry) => entry.id === portfolioId) ?? portfolios[0]
+  const portfolio = selectPortfolio(portfolios, portfolioId)
 
   const [rules, setRules] = useState<AlertRule[]>(() =>
     loadRules(defaultRules(portfolio.positions.map((position) => position.ticker))),

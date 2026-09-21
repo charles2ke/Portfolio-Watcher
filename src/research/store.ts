@@ -41,6 +41,11 @@ export function defaultPortfolio(): Portfolio {
   }
 }
 
+/** Resolves the selected portfolio, falling back to the first one when the id is stale. */
+export function selectPortfolio(portfolios: Portfolio[], id: string): Portfolio {
+  return portfolios.find((entry) => entry.id === id) ?? portfolios[0]
+}
+
 export function defaultWatchlists(): ResearchWatchlist[] {
   return [
     { id: 'ideas', name: 'Research ideas', tickers: ['CNVX', 'KNSU', 'ZPHR'] },
