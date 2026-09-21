@@ -66,13 +66,14 @@ export function WatchlistsView({ watchlists, alerts, onChange, onOpenCompany }: 
               type="button"
               className="btn btn--sm"
               onClick={() => {
-                const raw = (tickerByList[watchlist.id] ?? '').toUpperCase()
+                const raw = (tickerByList[watchlist.id] ?? '').trim().toUpperCase()
                 const company = getCompany(raw)
                 if (!company) return
+                const symbol = company.security.ticker
                 onChange(
                   watchlists.map((entry) =>
-                    entry.id === watchlist.id && !entry.tickers.includes(raw)
-                      ? { ...entry, tickers: [...entry.tickers, raw] }
+                    entry.id === watchlist.id && !entry.tickers.includes(symbol)
+                      ? { ...entry, tickers: [...entry.tickers, symbol] }
                       : entry,
                   ),
                 )

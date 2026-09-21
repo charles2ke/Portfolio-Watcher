@@ -23,7 +23,7 @@ export function SettingsView({ rules, alerts, onChangeRules }: Props) {
             key: rule.id,
             cells: [
               ALERT_TYPE_LABELS[rule.type],
-              rule.ticker ?? 'Portfolio',
+              rule.ticker ?? (rule.type === 'macro' ? 'Macro' : 'Portfolio'),
               <input
                 key="threshold"
                 type="number"

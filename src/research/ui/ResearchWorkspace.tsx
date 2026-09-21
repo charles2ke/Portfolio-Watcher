@@ -41,7 +41,7 @@ export function ResearchWorkspace({ alertsSlot }: { alertsSlot: ReactNode }) {
     const stored = loadPortfolios()
     return stored.length > 0 ? stored : [defaultPortfolio()]
   })
-  const [portfolioId, setPortfolioId] = useState<string>(() => '')
+  const [portfolioId, setPortfolioId] = useState<string>(() => portfolios[0].id)
   const [watchlists, setWatchlists] = useState<ResearchWatchlist[]>(() => {
     const stored = loadWatchlists()
     return stored.length > 0 ? stored : defaultWatchlists()
@@ -53,7 +53,7 @@ export function ResearchWorkspace({ alertsSlot }: { alertsSlot: ReactNode }) {
   const portfolio = portfolios.find((entry) => entry.id === portfolioId) ?? portfolios[0]
 
   const [rules, setRules] = useState<AlertRule[]>(() =>
-    loadRules(defaultRules(defaultPortfolio().positions.map((position) => position.ticker))),
+    loadRules(defaultRules(portfolio.positions.map((position) => position.ticker))),
   )
 
   useEffect(() => savePortfolios(portfolios), [portfolios])
@@ -64,7 +64,7 @@ export function ResearchWorkspace({ alertsSlot }: { alertsSlot: ReactNode }) {
   useEffect(() => saveRules(rules), [rules])
 
   const alerts = useMemo(() => {
-    const holdings = buildHoldings(portfolio.positions).map((holding) => ({
+    const holdings = buildHoldings(portfolio.positions, portfolio.cash).map((holding) => ({
       ticker: holding.ticker,
       weight: holding.weight,
     }))
