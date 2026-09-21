@@ -50,7 +50,8 @@ export function ResearchWorkspace({ alertsSlot }: { alertsSlot: ReactNode }) {
   const [screens, setScreens] = useState<SavedScreen[]>(() => loadScreens())
   const [profile, setProfile] = useState<InvestorProfile>(() => loadProfile())
 
-  const portfolio = portfolios.find((entry) => entry.id === portfolioId) ?? portfolios[0]
+  // `findIndex` yields -1 only if the selected id ever disappears; clamping falls back to the first portfolio.
+  const portfolio = portfolios[Math.max(portfolios.findIndex((entry) => entry.id === portfolioId), 0)]
 
   const [rules, setRules] = useState<AlertRule[]>(() =>
     loadRules(defaultRules(portfolio.positions.map((position) => position.ticker))),
