@@ -5,15 +5,18 @@
 [![Deploy to GitHub Pages](https://github.com/charles2ke/Portfolio-Watcher/actions/workflows/pages.yml/badge.svg)](https://github.com/charles2ke/Portfolio-Watcher/actions/workflows/pages.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-An ultra-modern, mobile-first stock watchlist. Sign in with Microsoft, Google or as a guest, add
-the ticker symbols you care about, choose the dip/rise percentage that should alert you, and pick
-whether the alert goes out over email, SMS or WhatsApp.
+An investment research and portfolio intelligence workspace. Discover securities with an
+institutional screener, research a company across ten analysis tabs, value it with an editable DCF,
+construct and stress-test a portfolio, map macro exposure, and save every analysis as a frozen
+report — plus the original price-alert watchlist with email, SMS and WhatsApp alerts.
 
 🔗 **Live app:** https://charles2ke.github.io/Portfolio-Watcher/
 
 ## Contents
 
 - [Features](#features)
+- [Research platform](#research-platform)
+- [Data honesty](#data-honesty)
 - [Getting started](#getting-started)
 - [Configuration](#configuration)
 - [How it works](#how-it-works)
@@ -28,6 +31,7 @@ whether the alert goes out over email, SMS or WhatsApp.
 
 ## Features
 
+- **Research workspace** — discover, research, value, stress-test, allocate and report in one flow.
 - **Sign in your way** — Microsoft (Entra ID), Google or a local guest session, with one-click logout.
 - **Ticker watchlist** — add any symbol, set an independent dip % and rise % alert threshold.
 - **Alert channels** — email, SMS and WhatsApp, with per-channel destination validation.
@@ -35,6 +39,47 @@ whether the alert goes out over email, SMS or WhatsApp.
   every 15 seconds.
 - **Dark theme toggle** — respects your system preference and remembers your choice.
 - **Mobile first** — responsive layout, 44px touch targets and no horizontal overflow at 360px.
+
+## Research platform
+
+The workspace shell keeps portfolio and research context while you move between modules, and a
+global security search (name, ticker or exchange) is available from every screen.
+
+| Module | What it does |
+| --- | --- |
+| Dashboard | Portfolio value, watchlists, market overview, upcoming earnings, macro calendar, risk alerts, recent research, saved screens and analysis shortcuts. |
+| Discover | Institutional screener over market cap, sector, geography, growth, valuation, quality, leverage, income, momentum and volatility, with sorting, saved screens, comparison mode, watchlist add and CSV/XLSX export. |
+| Company Research | Overview, Financials, Valuation, Earnings, Technicals, Quant, Competition, Dividends, Ownership and News tabs for a single security. |
+| Valuation | Five-year unlevered free-cash-flow DCF with editable assumptions, perpetuity-growth and exit-multiple terminal values, base/bull/bear scenarios and two sensitivity matrices. |
+| Earnings | Consensus versus reported EPS and revenue, surprises, historical price reaction, company KPIs, management guidance and an options-implied move when options data exists. |
+| Technicals | Daily/weekly/monthly SMA, EMA, RSI, MACD, Bollinger Bands, ATR, volume averages, relative strength, support/resistance, signal detection, Fibonacci retracement and a trade planner. |
+| Quant | Monthly and day-of-week seasonality with sample size and statistical significance, drawdowns, return distribution, autocorrelation and earnings/macro event studies. |
+| Competition | Peer metric comparison, moat dimensions, market-share trends where available, innovation, capital allocation, threats, risks and catalysts. |
+| Dividends | Yield, payout and FCF payout ratios, growth streaks, CAGRs, cuts, an explainable safety breakdown and a DRIP simulator over 5/10/20 years. |
+| Portfolio | Positions, transactions, cash, benchmark, risk metrics (volatility, beta, drawdown, VaR, expected shortfall, liquidity, rate sensitivity), exposures, correlation matrix, stress scenarios, risk heat map, investor profile, target allocation, rebalancing and dividend income. |
+| Macro | Policy rates, yield curve, inflation, growth, labour, spreads, dollar, oil and index series, a macro-to-portfolio exposure map and scenario estimates. |
+| Watchlists | Multiple lists with price movement, valuation, earnings date and triggered alerts. |
+| Reports | Saved analyses with the frozen snapshot, assumptions, model and calculation versions, exportable to CSV or PDF. |
+| Price Alerts | The original dip/rise watchlist with email, SMS and WhatsApp alert channels. |
+| Settings | Alert rules, triggered alerts and full data provenance. |
+
+## Data honesty
+
+This build ships with a bundled, **explicitly synthetic** dataset so that every calculation is
+reproducible offline. It contains no real company financials, and the securities in it are
+fictional. The application is deliberately built so that:
+
+- calculations are performed by pure analytics functions, never by a language model;
+- unavailable data (options, dividends, market share, qualitative commentary) is rendered as
+  "not available" rather than being invented;
+- every externally sourced metric carries its provider, source and as-of timestamp;
+- scenario, stress-test and seasonality output is labelled as an estimate, with sample sizes and
+  statistical significance shown so historical noise is not presented as an edge;
+- saved reports keep the values calculated at generation time, so historical research does not
+  silently change when the data is refreshed.
+
+Connect a licensed market-data provider behind the same provider interface to research real
+securities.
 
 ## Getting started
 
@@ -97,6 +142,10 @@ src/
   App.tsx              top-level state, routing and quote refresh loop
   components/          Header, LoginScreen, SetupPage, WatchForm, TickerCard, Sparkline, AlertsPanel, ThemeToggle
   lib/                 auth, market + quoteProviders, alerts, notifications, watchlist, storage, theme, endpoints, navigation helpers
+  research/            dataset (universe), analytics engines (screener, dcf, risk, builder, earnings,
+                       technicals, quant, dividends, competition, macro, alerts, reports) and the
+                       orchestrator that hands calculated results to the interpretation layer
+  research/ui/         the workspace shell, global search and every module view
   test/setup.ts        Vitest/Testing Library setup
 e2e/                   Playwright specs (desktop + mobile projects)
 scripts/               update-readme.mjs, which regenerates the auto-managed README sections

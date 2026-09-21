@@ -83,7 +83,9 @@ export function DashboardView({
 
       <Panel title="Upcoming earnings">
         <ul className="dashboard__list">
-          {upcomingEarnings([...portfolio.positions.map((position) => position.ticker), ...watchTickers]).map(
+          {upcomingEarnings([
+            ...new Set([...portfolio.positions.map((position) => position.ticker), ...watchTickers]),
+          ]).map(
             (entry) => (
               <li key={entry.ticker}>
                 <button type="button" className="link" onClick={() => onOpenCompany(entry.ticker)}>

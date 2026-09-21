@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 import { navigate } from './lib/navigation'
@@ -32,6 +32,11 @@ async function signInAsGuest() {
   await userEvent.click(screen.getByRole('button', { name: /Get started/ }))
 }
 
+/** The price-alert watchlist is one module of the research workspace. */
+async function openPriceAlerts() {
+  await userEvent.click(screen.getByRole('button', { name: 'Price Alerts' }))
+}
+
 describe('App', () => {
   it('shows the login screen first and signs in as guest', async () => {
     render(<App />)
@@ -39,6 +44,7 @@ describe('App', () => {
     expect(screen.getByTestId('setup-page')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /Get started/ }))
     expect(screen.getByTestId('current-user')).toHaveTextContent('Guest')
+    await openPriceAlerts()
     expect(screen.getByTestId('watchlist-empty')).toBeInTheDocument()
   })
 
@@ -47,6 +53,7 @@ describe('App', () => {
     writeJSON(STORAGE_KEYS.watches, [watch])
     render(<App />)
     expect(screen.getByTestId('current-user')).toHaveTextContent('Ada')
+    await openPriceAlerts()
     await waitFor(() => expect(screen.getByTestId('ticker-MSFT')).toBeInTheDocument())
     await waitFor(() => expect(screen.getAllByRole('status').length).toBeGreaterThan(0))
   })
@@ -89,6 +96,7 @@ describe('App', () => {
 
   it('adds and removes a ticker', async () => {
     await signInAsGuest()
+    await openPriceAlerts()
     await userEvent.type(screen.getByLabelText('Ticker symbol'), 'MSFT')
     await userEvent.type(screen.getByLabelText('Email address'), 'ada@example.com')
     await userEvent.click(screen.getByRole('button', { name: 'Add to watchlist' }))
@@ -142,6 +150,7 @@ describe('App', () => {
     await act(async () => {
       render(<App />)
     })
+    fireEvent.click(screen.getByRole('button', { name: 'Price Alerts' }))
     const before = screen.getByTestId('ticker-MSFT').textContent
     await act(async () => {
       await vi.advanceTimersByTimeAsync(15000)
@@ -156,6 +165,7 @@ describe('App', () => {
     writeJSON(STORAGE_KEYS.user, { id: '1', name: 'Ada', email: '', provider: 'guest' })
     writeJSON(STORAGE_KEYS.watches, [watch])
     render(<App />)
+    await openPriceAlerts()
     await waitFor(() => expect(screen.getByTestId('alert-status-MSFT')).toHaveTextContent('Sent'))
     const calls = fetchMock.mock.calls.length
     await act(async () => {
