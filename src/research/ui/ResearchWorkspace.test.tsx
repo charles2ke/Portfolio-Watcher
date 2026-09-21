@@ -22,9 +22,9 @@ async function searchAndOpen(ticker: string) {
 describe('ResearchWorkspace', () => {
   it('navigates across every module without losing context', async () => {
     renderWorkspace()
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Dashboard')
+    expect(screen.getByText('Legacy price alerts')).toBeInTheDocument()
 
-    for (const name of ['Discover', 'Portfolio', 'Macro', 'Watchlists', 'Reports', 'Settings']) {
+    for (const name of ['Dashboard', 'Discover', 'Portfolio', 'Macro', 'Watchlists', 'Reports', 'Settings']) {
       await openModule(name)
       expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(name)
     }

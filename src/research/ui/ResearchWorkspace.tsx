@@ -35,7 +35,7 @@ import type { InvestorProfile, Portfolio, ResearchReport, ResearchWatchlist } fr
 
 /** The research platform shell: navigation, global search and every module. */
 export function ResearchWorkspace({ alertsSlot }: { alertsSlot: ReactNode }) {
-  const [module, setModule] = useState<ModuleId>('dashboard')
+  const [module, setModule] = useState<ModuleId>('alerts')
   const [ticker, setTicker] = useState<string | null>(null)
   const [portfolios, setPortfolios] = useState<Portfolio[]>(() => {
     const stored = loadPortfolios()

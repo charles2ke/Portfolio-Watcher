@@ -104,6 +104,7 @@ test.describe('Portfolio Watcher', () => {
 
   test('moves through the research workflow from discovery to reporting', async ({ page }) => {
     await signInAsGuest(page)
+    await openModule(page, 'Dashboard')
     await expect(page.getByRole('heading', { level: 2, name: 'Dashboard' })).toBeVisible()
     await page.screenshot({ path: 'test-results/screenshots/dashboard.png', fullPage: true })
 
