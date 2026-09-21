@@ -16,6 +16,7 @@ import {
   saveRules,
   saveScreens,
   saveWatchlists,
+  selectPortfolio,
 } from './store'
 
 afterEach(() => {
@@ -57,5 +58,11 @@ describe('research store', () => {
   it('ignores corrupt collections', () => {
     globalThis.localStorage.setItem(RESEARCH_KEYS.watchlists, '{"not":"an array"}')
     expect(loadWatchlists()).toEqual(defaultWatchlists())
+  })
+
+  it('selects a portfolio by id and falls back when the id is unknown', () => {
+    const portfolios = [defaultPortfolio(), { ...defaultPortfolio(), id: 'second' }]
+    expect(selectPortfolio(portfolios, 'second').id).toBe('second')
+    expect(selectPortfolio(portfolios, 'missing')).toBe(portfolios[0])
   })
 })
