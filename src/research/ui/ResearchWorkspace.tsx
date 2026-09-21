@@ -57,6 +57,12 @@ export function ResearchWorkspace({ alertsSlot }: { alertsSlot: ReactNode }) {
     loadRules(defaultRules(portfolio.positions.map((position) => position.ticker))),
   )
 
+  // Opening a module or a company replaces the whole view: start it at the top
+  // instead of leaving the reader stranded mid-page at the previous offset.
+  useEffect(() => {
+    globalThis.scrollTo(0, 0)
+  }, [module, ticker])
+
   useEffect(() => savePortfolios(portfolios), [portfolios])
   useEffect(() => saveWatchlists(watchlists), [watchlists])
   useEffect(() => saveReports(reports), [reports])

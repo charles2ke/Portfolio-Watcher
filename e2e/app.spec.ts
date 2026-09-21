@@ -150,4 +150,37 @@ test.describe('Portfolio Watcher', () => {
     expect(overflow).toBeLessThanOrEqual(0)
     await page.screenshot({ path: 'test-results/screenshots/mobile.png', fullPage: true })
   })
+
+  test('keeps every research module inside the mobile viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 780 })
+    await signInAsGuest(page)
+    const modules = [
+      'Dashboard',
+      'Discover',
+      'Company Research',
+      'Portfolio',
+      'Macro',
+      'Watchlists',
+      'Reports',
+      'Price Alerts',
+      'Settings',
+    ]
+    for (const name of modules) {
+      await openModule(page, name)
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      )
+      expect(overflow, `${name} overflows horizontally`).toBeLessThanOrEqual(0)
+    }
+    await page.screenshot({ path: 'test-results/screenshots/mobile-settings.png', fullPage: true })
+  })
+
+  test('returns to the top of the page when a module changes', async ({ page }) => {
+    await signInAsGuest(page)
+    await openModule(page, 'Discover')
+    await page.evaluate(() => globalThis.scrollTo(0, 800))
+    await expect.poll(() => page.evaluate(() => globalThis.scrollY)).toBeGreaterThan(0)
+    await openModule(page, 'Portfolio')
+    await expect.poll(() => page.evaluate(() => globalThis.scrollY)).toBe(0)
+  })
 })
