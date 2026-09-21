@@ -99,6 +99,13 @@ describe('ResearchWorkspace', () => {
     expect(screen.queryByText('Quality growth')).toBeNull()
   })
 
+  it('falls back to the first portfolio when the selected id is unknown', () => {
+    renderWorkspace()
+    const select = screen.getByLabelText('Portfolio')
+    fireEvent.change(select, { target: { value: 'does-not-exist' } })
+    expect(select).toHaveValue('core')
+  })
+
   it('falls back to defaults when stored collections are empty', () => {
     localStorage.setItem(RESEARCH_KEYS.portfolios, '[]')
     localStorage.setItem(RESEARCH_KEYS.watchlists, '[]')
