@@ -736,6 +736,12 @@ h3 {
 
 .table-wrap {
   overflow-x: auto;
+  min-width: 0;
+  max-width: 100%;
+  /* Contain visually hidden (absolutely positioned) labels inside wide tables so
+     they cannot extend the page's horizontal scroll area on small screens. */
+  position: relative;
+  overscroll-behavior-x: contain;
 }
 
 .data-table {
@@ -989,5 +995,15 @@ h3 {
     grid-auto-flow: column;
     grid-auto-columns: max-content;
     overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 0.75rem;
+  }
+
+  .workspace__nav-item {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    white-space: nowrap;
+    scroll-snap-align: start;
   }
 }
